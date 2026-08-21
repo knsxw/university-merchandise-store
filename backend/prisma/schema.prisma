@@ -1,0 +1,118 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Role {
+  id       Int     @id @default(autoincrement())
+  roleName String  @unique @map("roleName")
+  users    User[]
+
+  @@map("roles")
+}
+
+model User {
+  id          Int       @id @default(autoincrement())
+  microsoftId String?   @unique @map("microsoftId")
+  name        String
+  email       String    @unique
+  roleId      Int       @map("roleId")
+  department  String?
+  createdAt   DateTime  @default(now()) @map("createdAt")
+  updatedAt   DateTime  @updatedAt @map("updatedAt")
+
+  role        Role      @relation(fields: [roleId], references: [id])
+  products    Product[] @relation("ProductCreator")
+  carts       Cart[]
+  orders      Order[]
+
+  @@map("users")
+}
+
+model Category {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique
+  products Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id          Int         @id @default(autoincrement())
+  name        String
+  description String      @db.Text
+  price       Decimal     @db.Decimal(10, 2)
+  stock       Int         @default(0)
+  imageUrl    String?     @map("imageUrl")
+  department  String?     // Target department for student discounts (e.g. "Computer Science")
+  discountPct Decimal?    @default(0.00) @map("discountPct") @db.Decimal(5, 2)
+  categoryId  Int         @map("categoryId")
+  createdBy   Int?        @map("createdBy")
+  createdAt   DateTime    @default(now()) @map("createdAt")
+  updatedAt   DateTime    @updatedAt @map("updatedAt")
+
+  category    Category    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  creator     User?       @relation("ProductCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  cartItems   CartItem[]
+  orderItems  OrderItem[]
+
+  @@map("products")
+}
+
+model Cart {
+  id        Int        @id @default(autoincrement())
+  userId    Int        @unique @map("userId")
+  createdAt DateTime   @default(now()) @map("createdAt")
+  updatedAt DateTime   @updatedAt @map("updatedAt")
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+
+  @@map("carts")
+}
+
+model CartItem {
+  id        Int      @id @default(autoincrement())
+  cartId    Int      @map("cartId")
+  productId Int      @map("productId")
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now()) @map("createdAt")
+
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([cartId, productId])
+  @@map("cart_items")
+}
+
+model Order {
+  id         Int         @id @default(autoincrement())
+  userId     Int         @map("userId")
+  totalPrice Decimal     @map("totalPrice") @db.Decimal(10, 2)
+  status     String      @default("PENDING") // PENDING, PROCESSING, COMPLETED, CANCELLED
+  discountApplied Decimal @default(0.00) @map("discountApplied") @db.Decimal(10, 2)
+  createdAt  DateTime    @default(now()) @map("createdAt")
+  updatedAt  DateTime    @updatedAt @map("updatedAt")
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items      OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        Int      @id @default(autoincrement())
+  orderId   Int      @map("orderId")
+  productId Int      @map("productId")
+  quantity  Int
+  price     Decimal  @db.Decimal(10, 2)
+
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@map("order_items")
+}
