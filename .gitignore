@@ -1,0 +1,39 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+dist/
+build/
+.next/
+out/
+
+# Environment
+.env
+.env.local
+.env.production
+.env.development
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+/backend/prisma/dev.db
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Docker
+docker-compose.override.yml
+
+# Logs
+logs/
+*.log
