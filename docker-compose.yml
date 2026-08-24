@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  # MySQL Database Service
+  mysql:
+    image: mysql:8.0
+    container_name: merch_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-merch_secure_pass}
+      MYSQL_DATABASE: ${DB_NAME:-merch_store}
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - merch_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD:-merch_secure_pass}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Express Backend Service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: merch_backend
+    restart: unless-stopped
+    ports:
+      - "${PORT:-5000}:5000"
+    environment:
+      - PORT=5000
+      - NODE_ENV=development
+      - DATABASE_URL=mysql://${DB_USER:-root}:${DB_PASSWORD:-merch_secure_pass}@mysql:3306/${DB_NAME:-merch_store}
+      - JWT_SECRET=${JWT_SECRET:-super_secret_jwt_signing_key_change_in_production}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
+      - AZURE_TENANT_ID=${AZURE_TENANT_ID}
+      - AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
+      - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET}
+      - AZURE_KEY_VAULT_NAME=${AZURE_KEY_VAULT_NAME}
+      - AZURE_KEY_VAULT_URI=${AZURE_KEY_VAULT_URI}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
+      - PEER_EDUCORE_API_URL=${PEER_EDUCORE_API_URL:-https://api.educore.mock/api}
+      - PEER_EDUCORE_API_KEY=${PEER_EDUCORE_API_KEY:-educore_partner_secret_key_12345}
+      - PARTNER_EXPOSED_API_KEY=${PARTNER_EXPOSED_API_KEY:-partner_incoming_api_key_98765}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - backend_uploads:/app/uploads
+    networks:
+      - merch_network
+
+  # React Frontend Service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: merch_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - merch_network
+
+  # Nginx Reverse Proxy (Optional unified port 80 entrypoint)
+  nginx:
+    image: nginx:alpine
+    container_name: merch_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - merch_network
+
+networks:
+  merch_network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  backend_uploads:
