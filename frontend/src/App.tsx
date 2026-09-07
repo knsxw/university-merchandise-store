@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { useState } from 'react';
+import { MsalProvider } from '@azure/msal-react';
+import { AuthProvider } from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext';
+import { msalInstance } from './auth/msal';
 import { Navbar } from './components/Navbar';
 import { HomePage } from './pages/HomePage';
 import { ProductDetailPage } from './pages/ProductDetailPage';
@@ -9,10 +11,9 @@ import { OrdersPage } from './pages/OrdersPage';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { LoginPage } from './pages/LoginPage';
 import { Product } from './types';
-import { ShieldCheck, Heart, Github } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 
 function AppContent() {
-  const { user } = useAuth();
   const [currentTab, setCurrentTab] = useState<'shop' | 'orders' | 'admin'>('shop');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
@@ -55,7 +56,6 @@ function AppContent() {
         {currentTab === 'shop' && (
           <HomePage
             onSelectProduct={(p) => setSelectedProduct(p)}
-            onOpenAdmin={() => setCurrentTab('admin')}
           />
         )}
 
@@ -132,7 +132,7 @@ function AppContent() {
             }}
           >
             <div>
-              Powered by Microsoft Entra ID • Azure Key Vault • OpenAI API • EduCore Peer Integration • Docker Compose
+              Powered by Microsoft Entra ID • Azure Key Vault • AI Integration • EduCore Peer Integration • Docker Compose
             </div>
             <div>
               © 2026 Smart University Merchandise Store. All rights reserved.
@@ -146,10 +146,12 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <CartProvider>
-        <AppContent />
-      </CartProvider>
-    </AuthProvider>
+    <MsalProvider instance={msalInstance}>
+      <AuthProvider>
+        <CartProvider>
+          <AppContent />
+        </CartProvider>
+      </AuthProvider>
+    </MsalProvider>
   );
 }

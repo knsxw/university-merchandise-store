@@ -154,6 +154,27 @@ The seed script creates default test accounts with instant role switching availa
 | **Student** | Siva Paoren | `siva.p@student.university.edu` | Computer Science | Browse merchandise, CS discount eligible |
 | **Student** | Thant Zin Oo | `thant.z@student.university.edu` | Business Admin | Browse merchandise, standard student ordering |
 
+### Configuring Real Microsoft Entra ID Login
+
+The login flow uses MSAL (Authorization Code + PKCE) on the frontend and verifies the returned
+ID token on the backend (signature via the tenant JWKS, issuer, audience, expiry). Until an
+app registration is configured, the store runs in **dev fallback mode** (unverified profile
+login + role switcher); once configured, only verified Entra ID tokens are accepted.
+
+1. In [Microsoft Entra admin center](https://entra.microsoft.com), register an app:
+   - **Platform**: Single-page application (SPA)
+   - **Redirect URIs**: `http://localhost:5173` (Vite dev), `http://localhost` (Docker/nginx)
+   - **Supported account types**: Single tenant (university directory)
+   - **API permissions**: `User.Read` (delegated, Microsoft Graph) — no client secret needed for login
+2. Fill in `AZURE_TENANT_ID` and `AZURE_CLIENT_ID` in `.env` / `backend/.env` / `frontend/.env`.
+3. Set `ADMIN_EMAILS` (comma-separated) — those accounts get the **Admin** role automatically on
+   first verified login. Staff/Student roles are managed afterwards via Admin → User Management.
+4. Restart the containers (`docker compose up --build`). The login modal now shows **Sign in with Microsoft**.
+
+**How it works:** the frontend opens the Microsoft sign-in popup and posts the resulting ID token
+to `POST /api/auth/microsoft`; the backend validates it against the tenant's public keys, upserts
+the user, and issues the app's own JWT used by all subsequent API calls.
+
 ---
 
 ## 🤖 7. AI Product Description Integration

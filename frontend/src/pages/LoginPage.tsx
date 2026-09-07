@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { ShieldCheck, UserCheck, ArrowRight, Sparkles, Lock, X } from 'lucide-react';
+import { ShieldCheck, UserCheck, ArrowRight, Lock, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { isEntraConfigured } from '../auth/msal';
 
 interface LoginPageProps {
   onClose?: () => void;
@@ -8,14 +9,20 @@ interface LoginPageProps {
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onClose, onSuccess }) => {
-  const { loginWithMicrosoft, switchDevRole, loading } = useAuth();
+  const { loginWithMicrosoft, loginWithMockProfile, switchDevRole, loading } = useAuth();
   const [customEmail, setCustomEmail] = useState('');
   const [customName, setCustomName] = useState('');
   const [customDepartment, setCustomDepartment] = useState('Computer Science');
 
-  const handleEntraIdLogin = async (e: React.FormEvent) => {
+  const handleMicrosoftSso = async () => {
+    await loginWithMicrosoft();
+    if (onSuccess) onSuccess();
+    if (onClose) onClose();
+  };
+
+  const handleDevIdentityLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    await loginWithMicrosoft({
+    await loginWithMockProfile({
       email: customEmail || 'khine.k@student.university.edu',
       name: customName || 'Khine Khant',
       department: customDepartment,
@@ -86,8 +93,43 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onClose, onSuccess }) => {
           </p>
         </div>
 
+        {/* Microsoft Entra ID SSO (real flow when configured) */}
+        {isEntraConfigured ? (
+          <button
+            onClick={handleMicrosoftSso}
+            disabled={loading}
+            className="btn btn-primary"
+            style={{ width: '100%', padding: '0.8rem', marginBottom: '1.5rem' }}
+          >
+            <svg width="18" height="18" viewBox="0 0 23 23" aria-hidden="true">
+              <path fill="#f25022" d="M0 0h11v11H0z" />
+              <path fill="#7fba00" d="M12 0h11v11H12z" />
+              <path fill="#00a4ef" d="M0 12h11v11H0z" />
+              <path fill="#ffb900" d="M12 12h11v11H12z" />
+            </svg>
+            Sign in with Microsoft
+          </button>
+        ) : (
+          <div
+            style={{
+              backgroundColor: '#fef3c7',
+              border: '1px solid #fcd34d',
+              color: '#92400e',
+              borderRadius: '8px',
+              padding: '0.6rem 0.9rem',
+              fontSize: '0.78rem',
+              fontWeight: 600,
+              marginBottom: '1.5rem',
+              lineHeight: 1.45,
+            }}
+          >
+            ⚠️ Dev fallback mode — Entra ID is not configured. Set <code>VITE_AZURE_CLIENT_ID</code> /{' '}
+            <code>VITE_AZURE_TENANT_ID</code> to enable real Microsoft single sign-on.
+          </div>
+        )}
+
         {/* Quick Demo Fast-Login Buttons */}
-        <div style={{ marginBottom: '1.5rem' }}>
+        <div style={{ marginBottom: isEntraConfigured ? '0' : '1.5rem' }}>
           <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '0.6rem' }}>
             Instant Dev Profiles
           </div>
@@ -143,75 +185,79 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onClose, onSuccess }) => {
           </div>
         </div>
 
-        {/* Microsoft Entra ID Custom Form */}
-        <div style={{ position: 'relative', textAlign: 'center', margin: '1.5rem 0' }}>
-          <hr style={{ border: 'none', borderTop: '1px solid var(--border)' }} />
-          <span
-            style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              backgroundColor: 'white',
-              padding: '0 0.75rem',
-              fontSize: '0.75rem',
-              color: '#94a3b8',
-              fontWeight: 700,
-            }}
-          >
-            OR SIGN IN WITH CUSTOM IDENTITY
-          </span>
-        </div>
+        {/* Custom identity form — dev fallback only (unverified profile exchange) */}
+        {!isEntraConfigured && (
+          <>
+            <div style={{ position: 'relative', textAlign: 'center', margin: '1.5rem 0' }}>
+              <hr style={{ border: 'none', borderTop: '1px solid var(--border)' }} />
+              <span
+                style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  backgroundColor: 'white',
+                  padding: '0 0.75rem',
+                  fontSize: '0.75rem',
+                  color: '#94a3b8',
+                  fontWeight: 700,
+                }}
+              >
+                OR SIGN IN WITH CUSTOM IDENTITY
+              </span>
+            </div>
 
-        <form onSubmit={handleEntraIdLogin} className="flex flex-col gap-3">
-          <div>
-            <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '0.25rem' }}>
-              University Email
-            </label>
-            <input
-              type="email"
-              value={customEmail}
-              onChange={(e) => setCustomEmail(e.target.value)}
-              placeholder="e.g. siva.p@student.university.edu"
-              className="form-input"
-            />
-          </div>
+            <form onSubmit={handleDevIdentityLogin} className="flex flex-col gap-3">
+              <div>
+                <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '0.25rem' }}>
+                  University Email
+                </label>
+                <input
+                  type="email"
+                  value={customEmail}
+                  onChange={(e) => setCustomEmail(e.target.value)}
+                  placeholder="e.g. siva.p@student.university.edu"
+                  className="form-input"
+                />
+              </div>
 
-          <div>
-            <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '0.25rem' }}>
-              Full Name
-            </label>
-            <input
-              type="text"
-              value={customName}
-              onChange={(e) => setCustomName(e.target.value)}
-              placeholder="e.g. Siva Paoren"
-              className="form-input"
-            />
-          </div>
+              <div>
+                <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '0.25rem' }}>
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  value={customName}
+                  onChange={(e) => setCustomName(e.target.value)}
+                  placeholder="e.g. Siva Paoren"
+                  className="form-input"
+                />
+              </div>
 
-          <div>
-            <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '0.25rem' }}>
-              Department
-            </label>
-            <input
-              type="text"
-              value={customDepartment}
-              onChange={(e) => setCustomDepartment(e.target.value)}
-              placeholder="e.g. Computer Science"
-              className="form-input"
-            />
-          </div>
+              <div>
+                <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '0.25rem' }}>
+                  Department
+                </label>
+                <input
+                  type="text"
+                  value={customDepartment}
+                  onChange={(e) => setCustomDepartment(e.target.value)}
+                  placeholder="e.g. Computer Science"
+                  className="form-input"
+                />
+              </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="btn btn-primary"
-            style={{ width: '100%', marginTop: '0.5rem', padding: '0.75rem' }}
-          >
-            <Lock size={16} /> Authenticate via Entra ID
-          </button>
-        </form>
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn btn-primary"
+                style={{ width: '100%', marginTop: '0.5rem', padding: '0.75rem' }}
+              >
+                <Lock size={16} /> Continue (Unverified Dev Login)
+              </button>
+            </form>
+          </>
+        )}
       </div>
     </div>
   );

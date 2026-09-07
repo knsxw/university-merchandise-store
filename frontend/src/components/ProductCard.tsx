@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShoppingCart, Tag, Sparkles, CheckCircle2 } from 'lucide-react';
+import { ShoppingCart, Tag } from 'lucide-react';
 import { Product } from '../types';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';

@@ -6,10 +6,9 @@ import { ProductCard } from '../components/ProductCard';
 
 interface HomePageProps {
   onSelectProduct: (product: Product) => void;
-  onOpenAdmin: () => void;
 }
 
-export const HomePage: React.FC<HomePageProps> = ({ onSelectProduct, onOpenAdmin }) => {
+export const HomePage: React.FC<HomePageProps> = ({ onSelectProduct }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
@@ -119,7 +118,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectProduct, onOpenAdmin
             <Cpu size={20} color="#93c5fd" />
             <div style={{ fontSize: '0.85rem' }}>
               <strong>AI Descriptions</strong>
-              <div style={{ color: '#94a3b8', fontSize: '0.75rem' }}>OpenAI GPT-4 powered</div>
+              <div style={{ color: '#94a3b8', fontSize: '0.75rem' }}>AI-powered descriptions</div>
             </div>
           </div>
 

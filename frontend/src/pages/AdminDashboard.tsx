@@ -9,19 +9,17 @@ import {
   Edit2,
   Key,
   DollarSign,
-  TrendingUp,
-  CheckCircle,
   ExternalLink,
   Save,
-  Tag
+  Settings
 } from 'lucide-react';
 import api from '../services/api';
-import { Product, Category, Order, User } from '../types';
+import { Product, Category, Order } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 
 export const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'inventory' | 'orders' | 'users' | 'peer-api'>('inventory');
+  const [activeTab, setActiveTab] = useState<'inventory' | 'orders' | 'users' | 'peer-api' | 'settings'>('inventory');
 
   // Inventory State
   const [products, setProducts] = useState<Product[]>([]);
@@ -56,6 +54,14 @@ export const AdminDashboard: React.FC = () => {
   const [exposedApiResponse, setExposedApiResponse] = useState<any>(null);
   const [apiKeyInput, setApiKeyInput] = useState('partner_incoming_api_key_98765');
 
+  // Site Settings State (Admin only) — AI provider configuration stored in DB
+  const [aiBaseUrl, setAiBaseUrl] = useState('');
+  const [aiModel, setAiModel] = useState('');
+  const [aiApiKey, setAiApiKey] = useState('');
+  const [aiApiKeyMasked, setAiApiKeyMasked] = useState<string | null>(null);
+  const [aiSource, setAiSource] = useState<string>('none');
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+
   const fetchInventory = async () => {
     try {
       const [prodRes, catRes] = await Promise.all([
@@ -89,11 +95,47 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
+  const fetchSettings = async () => {
+    if (user?.role !== 'Admin') return;
+    try {
+      const res = await api.get('/settings');
+      setAiBaseUrl(res.data.settings.ai.baseUrl || '');
+      setAiModel(res.data.settings.ai.model || '');
+      setAiApiKeyMasked(res.data.settings.ai.apiKeyMasked);
+      setAiSource(res.data.settings.ai.source);
+    } catch (err) {
+      console.error('Failed to load site settings:', err);
+    }
+  };
+
   useEffect(() => {
     fetchInventory();
     fetchOrders();
     fetchUsers();
+    fetchSettings();
   }, [user]);
+
+  const handleSaveSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingSettings(true);
+    try {
+      const res = await api.put('/settings', {
+        aiBaseUrl: aiBaseUrl || undefined,
+        aiModel: aiModel || undefined,
+        aiApiKey: aiApiKey || undefined,
+      });
+      setAiBaseUrl(res.data.settings.ai.baseUrl || '');
+      setAiModel(res.data.settings.ai.model || '');
+      setAiApiKeyMasked(res.data.settings.ai.apiKeyMasked);
+      setAiSource(res.data.settings.ai.source);
+      setAiApiKey('');
+      alert('Site settings saved successfully.');
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Failed to save site settings');
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
 
   // AI Description Generator Trigger
   const handleGenerateAi = async () => {
@@ -314,6 +356,15 @@ export const AdminDashboard: React.FC = () => {
         >
           <Key size={15} /> Peer API & Partner Tools
         </button>
+
+        {user?.role === 'Admin' && (
+          <button
+            className={`btn btn-sm ${activeTab === 'settings' ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => setActiveTab('settings')}
+          >
+            <Settings size={15} /> Site Settings
+          </button>
+        )}
       </div>
 
       {/* TAB 1: INVENTORY MANAGEMENT */}
@@ -626,6 +677,87 @@ export const AdminDashboard: React.FC = () => {
         </div>
       )}
 
+      {/* TAB 5: SITE SETTINGS (Admin only) — AI provider configuration stored in DB */}
+      {activeTab === 'settings' && user?.role === 'Admin' && (
+        <div className="card" style={{ maxWidth: '640px', padding: '1.75rem' }}>
+          <div className="flex items-center gap-2" style={{ marginBottom: '0.5rem' }}>
+            <Settings size={20} color="#1d4ed8" />
+            <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>AI Provider Settings</h3>
+          </div>
+          <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '1.25rem', lineHeight: 1.5 }}>
+            Configure any OpenAI-compatible provider (OpenAI, OpenRouter, Together AI, Azure OpenAI, Ollama...)
+            by pointing the Base URL at it. Settings are stored in the database and apply immediately —
+            no redeploy needed.
+          </p>
+
+          <div
+            style={{
+              backgroundColor: aiSource === 'none' ? '#fef2f2' : '#f0fdf4',
+              border: `1px solid ${aiSource === 'none' ? '#fecaca' : '#bbf7d0'}`,
+              color: aiSource === 'none' ? '#991b1b' : '#166534',
+              borderRadius: '8px',
+              padding: '0.6rem 0.9rem',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              marginBottom: '1.25rem',
+            }}
+          >
+            {aiSource === 'database' && '✅ Configured from database site settings.'}
+            {aiSource === 'environment' && '⚠️ Currently using the OPENAI_API_KEY environment variable as fallback.'}
+            {aiSource === 'none' && '❌ No AI key configured — AI generation falls back to a template description.'}
+          </div>
+
+          <form onSubmit={handleSaveSettings} className="flex flex-col gap-3">
+            <div>
+              <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '0.35rem' }}>
+                API Base URL
+              </label>
+              <input
+                type="text"
+                value={aiBaseUrl}
+                onChange={(e) => setAiBaseUrl(e.target.value)}
+                placeholder="https://api.openai.com/v1"
+                className="form-input"
+              />
+            </div>
+
+            <div>
+              <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '0.35rem' }}>
+                Model
+              </label>
+              <input
+                type="text"
+                value={aiModel}
+                onChange={(e) => setAiModel(e.target.value)}
+                placeholder="gpt-4o-mini"
+                className="form-input"
+              />
+            </div>
+
+            <div>
+              <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '0.35rem' }}>
+                API Key {aiApiKeyMasked && <span style={{ fontWeight: 500, color: '#94a3b8' }}>(saved: {aiApiKeyMasked})</span>}
+              </label>
+              <input
+                type="password"
+                value={aiApiKey}
+                onChange={(e) => setAiApiKey(e.target.value)}
+                placeholder={aiApiKeyMasked ? 'Leave blank to keep the saved key' : 'sk-...'}
+                className="form-input"
+                autoComplete="new-password"
+              />
+            </div>
+
+            <div className="flex items-center justify-between" style={{ marginTop: '0.5rem' }}>
+              <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Fields left blank keep their current values.</span>
+              <button type="submit" disabled={isSavingSettings} className="btn btn-primary">
+                <Save size={16} /> {isSavingSettings ? 'Saving...' : 'Save Settings'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
       {/* CREATE / EDIT PRODUCT MODAL */}
       {showProductModal && (
         <div className="modal-overlay" onClick={() => setShowProductModal(false)}>
@@ -777,14 +909,14 @@ export const AdminDashboard: React.FC = () => {
                     style={{ fontSize: '0.78rem', color: '#d97706', borderColor: '#fcd34d' }}
                   >
                     <Sparkles size={14} color="#d97706" />
-                    {isGeneratingAi ? 'AI Writing Copy...' : 'Generate with OpenAI'}
+                    {isGeneratingAi ? 'AI Writing Copy...' : 'Generate description with AI'}
                   </button>
                 </div>
                 <textarea
                   rows={4}
                   value={formDescription}
                   onChange={(e) => setFormDescription(e.target.value)}
-                  placeholder="Enter or generate description using OpenAI..."
+                  placeholder="Enter or generate a description with AI..."
                   className="form-textarea"
                 />
               </div>
