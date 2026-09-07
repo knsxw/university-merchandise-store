@@ -38,7 +38,7 @@ services:
       - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
       - AZURE_TENANT_ID=${AZURE_TENANT_ID}
       - AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
-      - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET}
+      - ADMIN_EMAILS=${ADMIN_EMAILS:-}
       - AZURE_KEY_VAULT_NAME=${AZURE_KEY_VAULT_NAME}
       - AZURE_KEY_VAULT_URI=${AZURE_KEY_VAULT_URI}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
@@ -61,6 +61,11 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-}
+        VITE_AZURE_CLIENT_ID: ${VITE_AZURE_CLIENT_ID:-}
+        VITE_AZURE_TENANT_ID: ${VITE_AZURE_TENANT_ID:-}
+        VITE_AZURE_REDIRECT_URI: ${VITE_AZURE_REDIRECT_URI:-}
     container_name: merch_frontend
     restart: unless-stopped
     ports:

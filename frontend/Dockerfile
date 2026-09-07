@@ -7,6 +7,17 @@ COPY package*.json ./
 RUN npm install
 
 COPY . .
+
+# Vite bakes VITE_* variables into the bundle at build time; compose passes them as build args
+ARG VITE_API_URL
+ARG VITE_AZURE_CLIENT_ID
+ARG VITE_AZURE_TENANT_ID
+ARG VITE_AZURE_REDIRECT_URI
+ENV VITE_API_URL=$VITE_API_URL \
+    VITE_AZURE_CLIENT_ID=$VITE_AZURE_CLIENT_ID \
+    VITE_AZURE_TENANT_ID=$VITE_AZURE_TENANT_ID \
+    VITE_AZURE_REDIRECT_URI=$VITE_AZURE_REDIRECT_URI
+
 RUN npm run build
 
 # Production stage with Nginx

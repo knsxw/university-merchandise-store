@@ -19,7 +19,15 @@ export interface AppConfig {
   peerEducoreApiUrl: string;
   peerEducoreApiKey: string;
   partnerExposedApiKey: string;
+  adminEmails: string[];
 }
+
+/**
+ * True when AZURE_CLIENT_ID holds a real value (not unset / not a placeholder).
+ * Gates whether the /auth/microsoft endpoint enforces verified ID tokens.
+ */
+export const isEntraConfigured = (): boolean =>
+  !!config.azureClientId && !config.azureClientId.includes('here');
 
 export const config: AppConfig = {
   port: parseInt(process.env.PORT || '5000', 10),
@@ -36,6 +44,10 @@ export const config: AppConfig = {
   peerEducoreApiUrl: process.env.PEER_EDUCORE_API_URL || 'https://api.educore.mock/api',
   peerEducoreApiKey: process.env.PEER_EDUCORE_API_KEY || 'educore_partner_secret_key_12345',
   partnerExposedApiKey: process.env.PARTNER_EXPOSED_API_KEY || 'partner_incoming_api_key_98765',
+  adminEmails: (process.env.ADMIN_EMAILS || '')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean),
 };
 
 /**
