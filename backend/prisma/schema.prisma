@@ -15,6 +15,15 @@ model Role {
   @@map("roles")
 }
 
+model SiteSetting {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt
+
+  @@map("site_settings")
+}
+
 model User {
   id          Int       @id @default(autoincrement())
   microsoftId String?   @unique @map("microsoftId")
