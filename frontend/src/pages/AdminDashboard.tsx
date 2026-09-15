@@ -703,7 +703,6 @@ export const AdminDashboard: React.FC = () => {
             }}
           >
             {aiSource === 'database' && '✅ Configured from database site settings.'}
-            {aiSource === 'environment' && '⚠️ Currently using the OPENAI_API_KEY environment variable as fallback.'}
             {aiSource === 'none' && '❌ No AI key configured — AI generation falls back to a template description.'}
           </div>
 

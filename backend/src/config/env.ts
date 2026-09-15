@@ -14,7 +14,6 @@ export interface AppConfig {
   azureClientId?: string;
   azureClientSecret?: string;
   azureKeyVaultUri?: string;
-  openaiApiKey?: string;
   openaiModel: string;
   peerEducoreApiUrl: string;
   peerEducoreApiKey: string;
@@ -54,8 +53,12 @@ export const config: AppConfig = {
   azureTenantId: process.env.AZURE_TENANT_ID,
   azureClientId: process.env.AZURE_CLIENT_ID,
   azureClientSecret: process.env.AZURE_CLIENT_SECRET,
-  azureKeyVaultUri: process.env.AZURE_KEY_VAULT_URI,
-  openaiApiKey: process.env.OPENAI_API_KEY,
+  azureKeyVaultUri:
+    process.env.KEY_VAULT_URL ||
+    process.env.AZURE_KEY_VAULT_URI ||
+    (process.env.AZURE_KEY_VAULT_NAME
+      ? `https://${process.env.AZURE_KEY_VAULT_NAME}.vault.azure.net`
+      : undefined),
   openaiModel: process.env.OPENAI_MODEL || 'gpt-4o-mini',
   peerEducoreApiUrl: process.env.PEER_EDUCORE_API_URL || 'https://api.educore.mock/api',
   peerEducoreApiKey: process.env.PEER_EDUCORE_API_KEY || DEFAULT_PEER_API_KEY,
@@ -100,10 +103,27 @@ export function validateProductionConfig(): void {
   }
 }
 
-/**
- * Initializes secrets from Azure Key Vault when running on Azure Cloud
- */
-export async function initializeKeyVaultSecrets(): Promise<void> {
+type StringConfigKey =
+  | 'jwtSecret'
+  | 'peerEducoreApiKey'
+  | 'partnerExposedApiKey';
+
+const KEY_VAULT_SECRETS: ReadonlyArray<{
+  vaultName: string;
+  configKey: StringConfigKey;
+  environmentName: string;
+}> = [
+  { vaultName: 'JWT-SECRET', configKey: 'jwtSecret', environmentName: 'JWT_SECRET' },
+  { vaultName: 'PEER-EDUCORE-API-KEY', configKey: 'peerEducoreApiKey', environmentName: 'PEER_EDUCORE_API_KEY' },
+  { vaultName: 'PARTNER-EXPOSED-API-KEY', configKey: 'partnerExposedApiKey', environmentName: 'PARTNER_EXPOSED_API_KEY' },
+];
+
+let keyVaultInitialization: Promise<void> | undefined;
+
+const isNotFoundError = (error: unknown): boolean =>
+  typeof error === 'object' && error !== null && 'statusCode' in error && error.statusCode === 404;
+
+async function loadKeyVaultSecrets(): Promise<void> {
   if (!config.azureKeyVaultUri) {
     console.log('ℹ️  Azure Key Vault URI not provided. Using environment variables.');
     return;
@@ -114,18 +134,47 @@ export async function initializeKeyVaultSecrets(): Promise<void> {
     const credential = new DefaultAzureCredential();
     const secretClient = new SecretClient(config.azureKeyVaultUri, credential);
 
-    // Retrieve database URL or other secrets if present in Key Vault
-    const dbUrlSecret = await secretClient.getSecret('DATABASE-URL').catch(() => null);
-    if (dbUrlSecret?.value) config.databaseUrl = dbUrlSecret.value;
+    const loadedNames: string[] = [];
+    const missingNames: string[] = [];
 
-    const jwtSecret = await secretClient.getSecret('JWT-SECRET').catch(() => null);
-    if (jwtSecret?.value) config.jwtSecret = jwtSecret.value;
+    await Promise.all(KEY_VAULT_SECRETS.map(async ({ vaultName, configKey, environmentName }) => {
+      try {
+        const secret = await secretClient.getSecret(vaultName);
+        if (!secret.value) {
+          missingNames.push(vaultName);
+          return;
+        }
 
-    const openaiSecret = await secretClient.getSecret('OPENAI-API-KEY').catch(() => null);
-    if (openaiSecret?.value) config.openaiApiKey = openaiSecret.value;
+        config[configKey] = secret.value;
+        process.env[environmentName] = secret.value;
+        loadedNames.push(vaultName);
+      } catch (error) {
+        if (isNotFoundError(error)) {
+          missingNames.push(vaultName);
+          return;
+        }
+        throw error;
+      }
+    }));
 
-    console.log('✅ Azure Key Vault secrets successfully loaded.');
+    console.log(`✅ Loaded ${loadedNames.length} secret(s) from Azure Key Vault: ${loadedNames.join(', ') || 'none'}.`);
+    if (missingNames.length > 0) {
+      console.warn(`⚠️  Key Vault secret(s) not found; existing environment values remain in use: ${missingNames.join(', ')}.`);
+    }
   } catch (error) {
-    console.warn('⚠️  Could not fetch secrets from Azure Key Vault. Falling back to local env variables.', (error as Error).message);
+    const message = `Could not load secrets from Azure Key Vault: ${(error as Error).message}`;
+    if (config.nodeEnv === 'production') {
+      throw new Error(message, { cause: error });
+    }
+    console.warn(`⚠️  ${message}. Using local environment values because NODE_ENV is not production.`);
   }
+}
+
+/**
+ * Loads application secrets once, before importing modules that initialize
+ * database clients or request handlers.
+ */
+export function initializeKeyVaultSecrets(): Promise<void> {
+  keyVaultInitialization ??= loadKeyVaultSecrets();
+  return keyVaultInitialization;
 }
