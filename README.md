@@ -104,14 +104,14 @@ Docker Compose will start:
 - ⚡ **Backend API**: [http://localhost:5000/api](http://localhost:5000/api)
 - 🗄️ **MySQL Database**: `localhost:3306`
 
-> **Note:** The backend automatically applies migrations (`prisma db push`) and populates seed data (`prisma db seed`) upon container startup.
+> **Note:** The backend automatically applies the Prisma schema on container startup. In production it bootstraps only the required Admin, Staff, and Student roles, then runs the compiled server. Demo users/products and the development watcher run only when `NODE_ENV` is not `production`.
 
 ---
 
 ## 💻 5. Local Development (Without Docker)
 
 ### Prerequisites:
-- Node.js >= 20.x
+- Node.js >= 22.x
 - MySQL 8.0 running locally
 
 ### 1. Setup Backend
@@ -159,7 +159,7 @@ The seed script creates default test accounts with instant role switching availa
 The login flow uses MSAL (Authorization Code + PKCE) on the frontend and verifies the returned
 ID token on the backend (signature via the tenant JWKS, issuer, audience, expiry). Until an
 app registration is configured, the store runs in **dev fallback mode** (unverified profile
-login + role switcher); once configured, only verified Entra ID tokens are accepted.
+login + role switcher); once configured, only verified Entra ID tokens are accepted and the dev role switcher is disabled.
 
 1. In [Microsoft Entra admin center](https://entra.microsoft.com), register an app:
    - **Platform**: Single-page application (SPA)
@@ -174,6 +174,11 @@ login + role switcher); once configured, only verified Entra ID tokens are accep
 **How it works:** the frontend opens the Microsoft sign-in popup and posts the resulting ID token
 to `POST /api/auth/microsoft`; the backend validates it against the tenant's public keys, upserts
 the user, and issues the app's own JWT used by all subsequent API calls.
+
+**New production database:** container startup creates only the three required RBAC roles. Put at
+least one university account in `ADMIN_EMAILS` before deployment. That account becomes the initial
+administrator on its first Microsoft login; other accounts are created as Students and can then be
+promoted to Staff from Admin → User Management.
 
 ---
 

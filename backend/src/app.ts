@@ -12,6 +12,7 @@ import userRoutes from './routes/user.routes';
 import peerRoutes from './routes/peer.routes';
 import settingsRoutes from './routes/settings.routes';
 import { errorHandler } from './middlewares/errorHandler';
+import { config } from './config/env';
 
 const app = express();
 
@@ -20,7 +21,7 @@ app.use(helmet({
   crossOriginResourcePolicy: false,
 }));
 app.use(cors({
-  origin: '*',
+  origin: config.nodeEnv === 'production' ? config.corsOrigins : true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key'],
 }));

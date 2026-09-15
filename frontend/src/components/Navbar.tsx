@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ShoppingBag, ShieldCheck, UserCheck, LogOut, ChevronDown, Package, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
+import { isEntraConfigured } from '../auth/msal';
 
 interface NavbarProps {
   currentTab: string;
@@ -174,33 +175,37 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
                     <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{user.email}</div>
                   </div>
 
-                  <div style={{ padding: '0.4rem 0.5rem', fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
-                    Dev Fast-Switch Role
-                  </div>
+                  {!isEntraConfigured && (
+                    <>
+                      <div style={{ padding: '0.4rem 0.5rem', fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
+                        Dev Fast-Switch Role
+                      </div>
 
-                  <button
-                    onClick={() => { switchDevRole('Student'); setShowRoleMenu(false); }}
-                    className="btn btn-secondary btn-sm"
-                    style={{ width: '100%', justifyContent: 'flex-start', marginBottom: '0.3rem' }}
-                  >
-                    <UserCheck size={14} color="#1d4ed8" /> Student (Computer Science)
-                  </button>
+                      <button
+                        onClick={() => { switchDevRole('Student'); setShowRoleMenu(false); }}
+                        className="btn btn-secondary btn-sm"
+                        style={{ width: '100%', justifyContent: 'flex-start', marginBottom: '0.3rem' }}
+                      >
+                        <UserCheck size={14} color="#1d4ed8" /> Student (Computer Science)
+                      </button>
 
-                  <button
-                    onClick={() => { switchDevRole('Staff'); setShowRoleMenu(false); }}
-                    className="btn btn-secondary btn-sm"
-                    style={{ width: '100%', justifyContent: 'flex-start', marginBottom: '0.3rem' }}
-                  >
-                    <UserCheck size={14} color="#d97706" /> Staff (Store Manager)
-                  </button>
+                      <button
+                        onClick={() => { switchDevRole('Staff'); setShowRoleMenu(false); }}
+                        className="btn btn-secondary btn-sm"
+                        style={{ width: '100%', justifyContent: 'flex-start', marginBottom: '0.3rem' }}
+                      >
+                        <UserCheck size={14} color="#d97706" /> Staff (Store Manager)
+                      </button>
 
-                  <button
-                    onClick={() => { switchDevRole('Admin'); setShowRoleMenu(false); }}
-                    className="btn btn-secondary btn-sm"
-                    style={{ width: '100%', justifyContent: 'flex-start', marginBottom: '0.5rem' }}
-                  >
-                    <UserCheck size={14} color="#dc2626" /> Administrator
-                  </button>
+                      <button
+                        onClick={() => { switchDevRole('Admin'); setShowRoleMenu(false); }}
+                        className="btn btn-secondary btn-sm"
+                        style={{ width: '100%', justifyContent: 'flex-start', marginBottom: '0.5rem' }}
+                      >
+                        <UserCheck size={14} color="#dc2626" /> Administrator
+                      </button>
+                    </>
+                  )}
 
                   <div style={{ borderTop: '1px solid var(--border)', paddingTop: '0.5rem' }}>
                     <button

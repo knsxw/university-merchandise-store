@@ -129,61 +129,63 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onClose, onSuccess }) => {
         )}
 
         {/* Quick Demo Fast-Login Buttons */}
-        <div style={{ marginBottom: isEntraConfigured ? '0' : '1.5rem' }}>
-          <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '0.6rem' }}>
-            Instant Dev Profiles
+        {!isEntraConfigured && (
+          <div style={{ marginBottom: '1.5rem' }}>
+            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '0.6rem' }}>
+              Instant Dev Profiles
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => handleQuickRole('Student')}
+                disabled={loading}
+                className="btn btn-secondary"
+                style={{ justifyContent: 'space-between', padding: '0.65rem 1rem' }}
+              >
+                <div className="flex items-center gap-2">
+                  <UserCheck size={16} color="#1d4ed8" />
+                  <div style={{ textAlign: 'left' }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>Student Account</div>
+                    <div style={{ fontSize: '0.72rem', color: '#64748b' }}>Computer Science Department (CSX4110)</div>
+                  </div>
+                </div>
+                <ArrowRight size={14} color="#94a3b8" />
+              </button>
+
+              <button
+                onClick={() => handleQuickRole('Staff')}
+                disabled={loading}
+                className="btn btn-secondary"
+                style={{ justifyContent: 'space-between', padding: '0.65rem 1rem' }}
+              >
+                <div className="flex items-center gap-2">
+                  <UserCheck size={16} color="#d97706" />
+                  <div style={{ textAlign: 'left' }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>Store Staff Member</div>
+                    <div style={{ fontSize: '0.72rem', color: '#64748b' }}>Product CRUD & Stock Management</div>
+                  </div>
+                </div>
+                <ArrowRight size={14} color="#94a3b8" />
+              </button>
+
+              <button
+                onClick={() => handleQuickRole('Admin')}
+                disabled={loading}
+                className="btn btn-secondary"
+                style={{ justifyContent: 'space-between', padding: '0.65rem 1rem' }}
+              >
+                <div className="flex items-center gap-2">
+                  <UserCheck size={16} color="#dc2626" />
+                  <div style={{ textAlign: 'left' }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>Administrator</div>
+                    <div style={{ fontSize: '0.72rem', color: '#64748b' }}>Full RBAC & Sales Reports</div>
+                  </div>
+                </div>
+                <ArrowRight size={14} color="#94a3b8" />
+              </button>
+            </div>
           </div>
-
-          <div className="flex flex-col gap-2">
-            <button
-              onClick={() => handleQuickRole('Student')}
-              disabled={loading}
-              className="btn btn-secondary"
-              style={{ justifyContent: 'space-between', padding: '0.65rem 1rem' }}
-            >
-              <div className="flex items-center gap-2">
-                <UserCheck size={16} color="#1d4ed8" />
-                <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>Student Account</div>
-                  <div style={{ fontSize: '0.72rem', color: '#64748b' }}>Computer Science Department (CSX4110)</div>
-                </div>
-              </div>
-              <ArrowRight size={14} color="#94a3b8" />
-            </button>
-
-            <button
-              onClick={() => handleQuickRole('Staff')}
-              disabled={loading}
-              className="btn btn-secondary"
-              style={{ justifyContent: 'space-between', padding: '0.65rem 1rem' }}
-            >
-              <div className="flex items-center gap-2">
-                <UserCheck size={16} color="#d97706" />
-                <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>Store Staff Member</div>
-                  <div style={{ fontSize: '0.72rem', color: '#64748b' }}>Product CRUD & Stock Management</div>
-                </div>
-              </div>
-              <ArrowRight size={14} color="#94a3b8" />
-            </button>
-
-            <button
-              onClick={() => handleQuickRole('Admin')}
-              disabled={loading}
-              className="btn btn-secondary"
-              style={{ justifyContent: 'space-between', padding: '0.65rem 1rem' }}
-            >
-              <div className="flex items-center gap-2">
-                <UserCheck size={16} color="#dc2626" />
-                <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>Administrator</div>
-                  <div style={{ fontSize: '0.72rem', color: '#64748b' }}>Full RBAC & Sales Reports</div>
-                </div>
-              </div>
-              <ArrowRight size={14} color="#94a3b8" />
-            </button>
-          </div>
-        </div>
+        )}
 
         {/* Custom identity form — dev fallback only (unverified profile exchange) */}
         {!isEntraConfigured && (
