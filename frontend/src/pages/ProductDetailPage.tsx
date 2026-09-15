@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, ShoppingBag, Tag, Sparkles, ShieldCheck, Check, Truck, RotateCcw } from 'lucide-react';
+import { X, ShoppingBag, Tag, Check } from 'lucide-react';
 import { Product } from '../types';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -38,7 +38,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ product, o
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div
-        className="card animate-fade-in"
+        className="card animate-fade-in product-dialog"
         style={{
           width: '100%',
           maxWidth: '850px',
@@ -52,29 +52,21 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ product, o
         {/* Close Button */}
         <button
           onClick={onClose}
+          className="icon-button"
+          aria-label="Close product details"
           style={{
             position: 'absolute',
             top: '16px',
             right: '16px',
-            background: 'white',
-            border: '1px solid var(--border)',
-            borderRadius: '50%',
-            width: '36px',
-            height: '36px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
             zIndex: 10,
-            boxShadow: 'var(--shadow-md)',
           }}
         >
           <X size={20} />
         </button>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
+        <div className="product-dialog-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
           {/* Image Column */}
-          <div style={{ position: 'relative', backgroundColor: '#f8fafc' }}>
+          <div className="product-dialog-media" style={{ position: 'relative', backgroundColor: 'var(--primary-light)' }}>
             <img
               src={product.imageUrl || 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=800&q=80'}
               alt={product.name}
@@ -91,10 +83,11 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ product, o
                   position: 'absolute',
                   top: '16px',
                   left: '16px',
-                  background: 'rgba(15, 23, 42, 0.9)',
-                  color: '#fbbf24',
+                  background: 'rgba(255, 255, 255, 0.92)',
+                  color: '#3f3f46',
                   padding: '0.4rem 0.8rem',
-                  borderRadius: '8px',
+                  border: '1px solid var(--border)',
+                  borderRadius: '7px',
                   fontSize: '0.8rem',
                   fontWeight: 700,
                   display: 'flex',
@@ -102,18 +95,18 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ product, o
                   gap: '0.35rem',
                 }}
               >
-                <Tag size={14} /> {product.department} Department Special
+                <Tag size={14} /> {product.department} pricing
               </div>
             )}
           </div>
 
           {/* Details Column */}
-          <div style={{ padding: '2rem', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+          <div className="product-dialog-content" style={{ padding: '2rem', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', marginBottom: '0.5rem', letterSpacing: '0.04em' }}>
               {product.category?.name || 'Official Merchandise'}
             </div>
 
-            <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#0f172a', lineHeight: 1.25, marginBottom: '0.75rem' }}>
+            <h2 style={{ fontSize: '1.6rem', fontWeight: 650, color: 'var(--text-main)', lineHeight: 1.25, marginBottom: '0.75rem' }}>
               {product.name}
             </h2>
 
@@ -121,10 +114,10 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ product, o
             <div style={{ marginBottom: '1.5rem' }}>
               {isEligibleForDiscount ? (
                 <div className="flex items-center gap-3">
-                  <span style={{ fontSize: '1.85rem', fontWeight: 800, color: '#16a34a' }}>
+                  <span style={{ fontSize: '1.75rem', fontWeight: 650, color: 'var(--success)' }}>
                     ฿{discountedPrice.toFixed(2)}
                   </span>
-                  <span style={{ fontSize: '1.1rem', color: '#94a3b8', textDecoration: 'line-through' }}>
+                  <span style={{ fontSize: '1rem', color: 'var(--text-muted)', textDecoration: 'line-through' }}>
                     ฿{Number(product.price).toFixed(2)}
                   </span>
                   <span className="badge badge-green">
@@ -133,7 +126,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ product, o
                 </div>
               ) : (
                 <div className="flex items-center gap-3">
-                  <span style={{ fontSize: '1.85rem', fontWeight: 800, color: '#1d4ed8' }}>
+                  <span style={{ fontSize: '1.75rem', fontWeight: 650, color: 'var(--text-main)' }}>
                     ฿{Number(product.price).toFixed(2)}
                   </span>
                   {product.discountPct && product.discountPct > 0 && product.department && (
@@ -145,23 +138,22 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ product, o
               )}
             </div>
 
-            {/* AI Generated Description Callout */}
+            {/* Product description */}
             <div
               style={{
-                backgroundColor: '#f8fafc',
+                backgroundColor: 'var(--primary-light)',
                 border: '1px solid var(--border)',
                 borderRadius: '10px',
                 padding: '1.15rem',
                 marginBottom: '1.5rem',
               }}
             >
-              <div className="flex items-center gap-2" style={{ marginBottom: '0.5rem' }}>
-                <Sparkles size={16} color="#d97706" />
-                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>
-                  AI-Curated Product Story
+              <div style={{ marginBottom: '0.5rem' }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#52525b' }}>
+                  Description
                 </span>
               </div>
-              <p style={{ fontSize: '0.925rem', color: '#334155', lineHeight: 1.6 }}>
+              <p style={{ fontSize: '0.925rem', color: 'var(--text-main)', lineHeight: 1.6 }}>
                 {product.description}
               </p>
             </div>
@@ -182,7 +174,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ product, o
             </div>
 
             {/* Quantity and Add to Cart */}
-            <div className="flex items-center gap-3" style={{ marginTop: 'auto', marginBottom: '1.5rem' }}>
+            <div className="flex items-center gap-3 product-dialog-actions" style={{ marginTop: 'auto', marginBottom: '1.5rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--border)', borderRadius: '8px', overflow: 'hidden' }}>
                 <button
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
@@ -207,22 +199,16 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ product, o
               >
                 {addedSuccess ? (
                   <>
-                    <Check size={18} /> Added to Cart!
+                    <Check size={18} /> Added
                   </>
                 ) : (
                   <>
-                    <ShoppingBag size={18} /> Add to Cart (฿{(discountedPrice * quantity).toFixed(2)})
+                    <ShoppingBag size={18} /> Add to cart · ฿{(discountedPrice * quantity).toFixed(2)}
                   </>
                 )}
               </button>
             </div>
 
-            {/* Trust Badges */}
-            <div className="flex items-center justify-between" style={{ borderTop: '1px solid var(--border)', paddingTop: '1rem', fontSize: '0.8rem', color: '#64748b' }}>
-              <span className="flex items-center gap-1"><Truck size={14} /> Campus Pickup / Delivery</span>
-              <span className="flex items-center gap-1"><ShieldCheck size={14} /> Official Licensing</span>
-              <span className="flex items-center gap-1"><RotateCcw size={14} /> Easy Exchanges</span>
-            </div>
           </div>
         </div>
       </div>
