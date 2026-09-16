@@ -135,6 +135,9 @@ export const microsoftLogin = async (req: Request, res: Response): Promise<void>
         update: {
           name: claims.name || normalizedEmail.split('@')[0],
           microsoftId: claims.oid || claims.sub || microsoftId || undefined,
+          // Promote allowlisted accounts even when they logged in previously as
+          // Students. Non-allowlisted users keep roles assigned by an Admin.
+          ...(isAdmin ? { roleId } : {}),
         },
         create: {
           email: tokenEmail,

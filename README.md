@@ -186,6 +186,10 @@ promoted to Staff from Admin → User Management.
 
 Staff and Administrators can trigger the **OpenAI GPT-4** integration when creating or updating products:
 
+An administrator configures the provider URL, model, and API key under **Admin Dashboard →
+Site Settings**. The API key is stored only in the database and is never loaded from an
+environment variable or Azure Key Vault.
+
 ```http
 POST /api/products/ai-description
 Authorization: Bearer <STAFF_OR_ADMIN_JWT>
@@ -243,18 +247,76 @@ Partner university systems can query live store stock:
 
 ## ☁️ 9. Azure Cloud Deployment Guide
 
-1. **Provision Azure Linux VM (Ubuntu 22.04 LTS)**.
+### Azure Key Vault setup
+
+The backend uses `DefaultAzureCredential` with the service-principal values supplied for
+the class project. That identity only needs permission to read secrets.
+
+1. Create a resource group and RBAC-enabled vault (replace the example values):
+
+   ```bash
+   az group create --name merch-store-rg --location southeastasia
+   az keyvault create \
+     --name <globally-unique-vault-name> \
+     --resource-group merch-store-rg \
+     --location southeastasia \
+     --enable-rbac-authorization true
+   ```
+
+2. Add the application secrets. Key Vault secret names use hyphens because Azure secret
+   names cannot contain underscores:
+
+   ```bash
+   az keyvault secret set --vault-name <vault-name> --name JWT-SECRET --value '<at-least-32-random-characters>'
+   az keyvault secret set --vault-name <vault-name> --name PEER-EDUCORE-API-KEY --value '<outgoing-peer-api-key>'
+   az keyvault secret set --vault-name <vault-name> --name PARTNER-EXPOSED-API-KEY --value '<incoming-partner-api-key>'
+   ```
+
+   | Key Vault secret | Backend setting |
+   | :--- | :--- |
+   | `JWT-SECRET` | `JWT_SECRET` |
+   | `PEER-EDUCORE-API-KEY` | `PEER_EDUCORE_API_KEY` |
+   | `PARTNER-EXPOSED-API-KEY` | `PARTNER_EXPOSED_API_KEY` |
+
+3. Give the service principal the **Key Vault Secrets User** role at the vault scope if
+   it has not already been granted access:
+
+   ```bash
+   az role assignment create \
+     --assignee <AZURE_CLIENT_ID> \
+     --role "Key Vault Secrets User" \
+     --scope <key-vault-resource-id>
+   ```
+
+4. Configure the backend with the four supplied values:
+
+   ```dotenv
+   AZURE_TENANT_ID=<tenant-id>
+   AZURE_CLIENT_ID=<service-principal-client-id>
+   AZURE_CLIENT_SECRET=<service-principal-secret>
+   KEY_VAULT_URL=https://<vault-name>.vault.azure.net
+   ```
+
+At startup, values found in Key Vault override local environment values. Missing optional
+vault entries keep their environment fallbacks. If a configured vault cannot be reached or
+authenticated in production, startup stops instead of silently using fallback credentials.
+
+### Deploy on an Azure VM
+
+1. **Provision an Azure Linux VM**.
 2. **Install Docker & Docker Compose**:
    ```bash
    sudo apt-get update && sudo apt-get install -y docker.io docker-compose
    ```
-3. **Configure Azure Key Vault**:
-   - Store `DATABASE-URL`, `JWT-SECRET`, and `OPENAI-API-KEY` secrets.
-   - Set `AZURE_KEY_VAULT_URI` in VM environment.
-4. **Deploy Containers**:
+3. **Deploy Containers**:
    ```bash
    git clone <REPO_URL>
    cd university-merchandise-store
    docker compose up -d
    ```
-5. **Setup HTTPS with Let's Encrypt / Certbot** on Nginx reverse proxy.
+4. **Setup HTTPS with Let's Encrypt / Certbot** on Nginx reverse proxy.
+
+Azure's JavaScript guidance recommends managed identity in hosted environments and
+`DefaultAzureCredential` for a consistent development/production authentication flow. See
+the [Azure Key Vault JavaScript quickstart](https://learn.microsoft.com/en-us/azure/key-vault/secrets/quick-create-node)
+and [Azure Identity authentication guidance](https://learn.microsoft.com/en-us/azure/developer/javascript/sdk/authentication/best-practices).

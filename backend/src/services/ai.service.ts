@@ -6,28 +6,24 @@ export interface AiRuntimeConfig {
   baseUrl: string;
   apiKey: string;
   model: string;
-  source: 'database' | 'environment' | 'none';
+  source: 'database' | 'none';
 }
 
 /**
  * Resolves the AI provider configuration for the current request.
- * Database site settings (Admin Dashboard) take precedence; environment
- * variables are a fallback so the project still works before an admin
- * configures anything. Any OpenAI-compatible provider is supported by
- * pointing baseUrl at it (e.g. OpenRouter, Together, Azure OpenAI, Ollama).
+ * The API key is read only from database site settings managed through the
+ * Admin Dashboard. Any OpenAI-compatible provider is supported by pointing
+ * baseUrl at it (e.g. OpenRouter, Together, Azure OpenAI, Ollama).
  */
 export async function resolveAiConfig(): Promise<AiRuntimeConfig> {
   const stored = await getSettings(Object.values(AI_SETTINGS));
-
-  const envKey =
-    config.openaiApiKey && !config.openaiApiKey.includes('here') ? config.openaiApiKey : '';
-  const apiKey = stored[AI_SETTINGS.apiKey]?.trim() || envKey;
+  const apiKey = stored[AI_SETTINGS.apiKey]?.trim() || '';
 
   return {
     baseUrl: stored[AI_SETTINGS.baseUrl]?.trim() || 'https://api.openai.com/v1',
     apiKey,
     model: stored[AI_SETTINGS.model]?.trim() || config.openaiModel || 'gpt-4o-mini',
-    source: stored[AI_SETTINGS.apiKey]?.trim() ? 'database' : apiKey ? 'environment' : 'none',
+    source: apiKey ? 'database' : 'none',
   };
 }
 

@@ -1,12 +1,15 @@
-import app from './app';
 import { config, initializeKeyVaultSecrets, validateProductionConfig } from './config/env';
-import prisma from './config/db';
 
 async function startServer() {
   try {
-    // Attempt Azure Key Vault secrets loading if configured
+    // Secrets must be loaded before app/controllers import the Prisma singleton.
     await initializeKeyVaultSecrets();
     validateProductionConfig();
+
+    const [{ default: app }, { default: prisma }] = await Promise.all([
+      import('./app'),
+      import('./config/db'),
+    ]);
 
     // Verify database connection
     await prisma.$connect();
