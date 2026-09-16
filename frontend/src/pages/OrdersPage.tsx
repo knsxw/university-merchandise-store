@@ -38,16 +38,16 @@ export const OrdersPage: React.FC<{ onBackToShop: () => void }> = ({ onBackToSho
 
   return (
     <div className="container" style={{ paddingBottom: '4rem', paddingTop: '1.5rem' }}>
-      <div className="flex items-center justify-between" style={{ marginBottom: '2rem' }}>
+      <div className="flex items-center justify-between page-header" style={{ marginBottom: '2rem' }}>
         <div>
-          <h1 style={{ fontSize: '1.85rem', fontWeight: 800, color: '#0f172a' }}>My Order History</h1>
-          <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '0.25rem' }}>
-            Track and view official university merchandise orders and discount receipts
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 650, color: 'var(--text-main)' }}>Orders</h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.25rem' }}>
+            Review purchases, status, and department discounts.
           </p>
         </div>
 
         <button onClick={onBackToShop} className="btn btn-secondary">
-          Continue Shopping <ArrowRight size={16} />
+          Back to shop <ArrowRight size={16} />
         </button>
       </div>
 
@@ -60,19 +60,19 @@ export const OrdersPage: React.FC<{ onBackToShop: () => void }> = ({ onBackToSho
           <Package size={52} style={{ margin: '0 auto 1rem', opacity: 0.3 }} />
           <h3>No orders placed yet</h3>
           <p style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>
-            Check out the store catalog to purchase university merchandise!
+            Completed purchases will appear here.
           </p>
           <button onClick={onBackToShop} className="btn btn-primary btn-sm" style={{ marginTop: '1.25rem' }}>
-            Browse Merchandise
+            Browse products
           </button>
         </div>
       ) : (
         <div className="flex flex-col gap-4 animate-fade-in">
           {orders.map((order) => (
-            <div key={order.id} className="card" style={{ padding: '1.5rem' }}>
+            <div key={order.id} className="card order-card" style={{ padding: '1.5rem' }}>
               {/* Order Header */}
               <div
-                className="flex items-center justify-between"
+                className="flex items-center justify-between order-header"
                 style={{
                   paddingBottom: '1rem',
                   borderBottom: '1px solid var(--border)',
@@ -82,18 +82,18 @@ export const OrdersPage: React.FC<{ onBackToShop: () => void }> = ({ onBackToSho
               >
                 <div>
                   <div className="flex items-center gap-2">
-                    <span style={{ fontWeight: 800, fontSize: '1.1rem', color: '#0f172a' }}>
+                    <span style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--text-main)' }}>
                       Order #{order.id}
                     </span>
                     {getStatusBadge(order.status)}
                   </div>
-                  <div className="flex items-center gap-3" style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.25rem' }}>
+                  <div className="flex items-center gap-3 order-meta" style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.25rem' }}>
                     <span className="flex items-center gap-1">
                       <Calendar size={13} /> {new Date(order.createdAt).toLocaleDateString()} {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                     {order.discountApplied > 0 && (
                       <span className="flex items-center gap-1" style={{ color: '#059669', fontWeight: 700 }}>
-                        <Tag size={13} /> Saved ฿{Number(order.discountApplied).toFixed(2)} with Peer Department Discount
+                        <Tag size={13} /> Department discount: −฿{Number(order.discountApplied).toFixed(2)}
                       </span>
                     )}
                   </div>
@@ -101,7 +101,7 @@ export const OrdersPage: React.FC<{ onBackToShop: () => void }> = ({ onBackToSho
 
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontSize: '0.8rem', color: '#64748b' }}>Total Paid</div>
-                  <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#1d4ed8' }}>
+                  <div style={{ fontSize: '1.2rem', fontWeight: 650, color: 'var(--text-main)' }}>
                     ฿{Number(order.totalPrice).toFixed(2)}
                   </div>
                 </div>
@@ -110,8 +110,8 @@ export const OrdersPage: React.FC<{ onBackToShop: () => void }> = ({ onBackToSho
               {/* Order Item List */}
               <div className="flex flex-col gap-3" style={{ paddingTop: '1rem' }}>
                 {order.items.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
+                  <div key={item.id} className="flex items-center justify-between gap-3 order-item">
+                    <div className="flex items-center gap-3 order-item-main">
                       <img
                         src={item.product?.imageUrl || 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=150&q=80'}
                         alt={item.product?.name}

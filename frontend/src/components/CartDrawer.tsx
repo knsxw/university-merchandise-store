@@ -3,9 +3,10 @@ import { X, Plus, Minus, Trash2, ShoppingBag, ArrowRight, ShieldCheck, Tag } fro
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
+import { Order } from '../types';
 
 interface CartDrawerProps {
-  onOrderSuccess: (order: any) => void;
+  onOrderSuccess: (order: Order) => void;
 }
 
 export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderSuccess }) => {
@@ -45,18 +46,19 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderSuccess }) => {
       <div className="drawer-right" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div
-          className="flex items-center justify-between"
+          className="flex items-center justify-between drawer-header"
           style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--border)' }}
         >
           <div className="flex items-center gap-2">
-            <ShoppingBag size={22} color="#1d4ed8" />
-            <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
-              Your Shopping Cart ({cart?.itemCount || 0})
+            <ShoppingBag size={20} />
+            <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-main)' }}>
+              Cart ({cart?.itemCount || 0})
             </h2>
           </div>
           <button
             onClick={closeDrawer}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
+            className="icon-button"
+            aria-label="Close cart"
           >
             <X size={24} />
           </button>
@@ -78,18 +80,18 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderSuccess }) => {
           >
             <ShieldCheck size={18} color="#059669" />
             <div>
-              <strong>Peer EduCore Verification Active:</strong> Enrolled in {user?.department}, department discount will be applied!
+              <strong>Department pricing applied.</strong> Your {user?.department} eligibility is verified.
             </div>
           </div>
         )}
 
         {/* Cart Item List */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem 1.5rem' }}>
+        <div className="drawer-body" style={{ flex: 1, overflowY: 'auto', padding: '1.25rem 1.5rem' }}>
           {!cart || cart.items.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '4rem 1rem', color: '#64748b' }}>
               <ShoppingBag size={48} style={{ margin: '0 auto 1rem', opacity: 0.3 }} />
               <p style={{ fontWeight: 600, fontSize: '1.05rem', color: '#334155' }}>Your cart is empty</p>
-              <p style={{ fontSize: '0.85rem', marginTop: '0.25rem' }}>Explore the university catalog and add gear to your bag!</p>
+              <p style={{ fontSize: '0.85rem', marginTop: '0.25rem' }}>Add an item from the catalog to get started.</p>
             </div>
           ) : (
             <div className="flex flex-col gap-4">
@@ -107,7 +109,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderSuccess }) => {
                 return (
                   <div
                     key={item.id}
-                    className="flex gap-3"
+                    className="flex gap-3 drawer-item"
                     style={{
                       paddingBottom: '1rem',
                       borderBottom: '1px solid #f1f5f9',
@@ -117,6 +119,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderSuccess }) => {
                     <img
                       src={item.product.imageUrl || 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=200&q=80'}
                       alt={item.product.name}
+                      className="drawer-item-image"
                       style={{
                         width: '72px',
                         height: '72px',
@@ -182,7 +185,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderSuccess }) => {
 
                         {/* Price */}
                         <div style={{ textAlign: 'right' }}>
-                          <span style={{ fontWeight: 800, fontSize: '0.95rem', color: '#1d4ed8' }}>
+                          <span style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--text-main)' }}>
                             ฿{(itemPrice * item.quantity).toFixed(2)}
                           </span>
                         </div>
@@ -198,10 +201,11 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderSuccess }) => {
         {/* Footer Checkout Summary */}
         {cart && cart.items.length > 0 && (
           <div
+            className="drawer-footer"
             style={{
               padding: '1.25rem 1.5rem',
               borderTop: '1px solid var(--border)',
-              backgroundColor: '#f8fafc',
+              backgroundColor: 'var(--primary-light)',
             }}
           >
             <div className="flex justify-between" style={{ marginBottom: '0.5rem', fontSize: '0.9rem', color: '#64748b' }}>
@@ -209,9 +213,9 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderSuccess }) => {
               <span style={{ fontWeight: 600 }}>฿{cart.subtotal.toFixed(2)}</span>
             </div>
 
-            <div className="flex justify-between" style={{ marginBottom: '1rem', fontSize: '1.15rem', color: '#0f172a', fontWeight: 800 }}>
-              <span>Order Total</span>
-              <span style={{ color: '#1d4ed8' }}>฿{cart.subtotal.toFixed(2)}</span>
+            <div className="flex justify-between" style={{ marginBottom: '1rem', fontSize: '1rem', color: 'var(--text-main)', fontWeight: 600 }}>
+              <span>Total</span>
+              <span>฿{cart.subtotal.toFixed(2)}</span>
             </div>
 
             <button
@@ -221,10 +225,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderSuccess }) => {
               style={{ width: '100%', padding: '0.8rem', fontSize: '1rem' }}
             >
               {isCheckingOut ? (
-                'Verifying & Processing Order...'
+                'Processing…'
               ) : (
                 <>
-                  Complete Purchase <ArrowRight size={18} />
+                  Checkout <ArrowRight size={18} />
                 </>
               )}
             </button>

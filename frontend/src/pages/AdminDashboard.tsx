@@ -259,16 +259,16 @@ export const AdminDashboard: React.FC = () => {
   return (
     <div className="container" style={{ paddingBottom: '4rem', paddingTop: '1.5rem' }}>
       {/* Header */}
-      <div className="flex items-center justify-between" style={{ marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+      <div className="flex items-center justify-between page-header" style={{ marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <div className="flex items-center gap-2">
             <h1 style={{ fontSize: '1.85rem', fontWeight: 800, color: '#0f172a' }}>
-              Staff & Administration Portal
+              Store management
             </h1>
             <span className="badge badge-purple">{user?.role} Access</span>
           </div>
           <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '0.25rem' }}>
-            Manage merchandise stock, automated AI descriptions, customer orders, and peer API connections.
+            Manage inventory, orders, user access, and integrations.
           </p>
         </div>
 
@@ -277,17 +277,17 @@ export const AdminDashboard: React.FC = () => {
             onClick={() => { resetForm(); setShowProductModal(true); }}
             className="btn btn-primary"
           >
-            <Plus size={18} /> Add New Merchandise
+            <Plus size={18} /> Add product
           </button>
         )}
       </div>
 
       {/* KPI Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+      <div className="admin-metrics" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
         <div className="card" style={{ padding: '1.25rem' }}>
           <div className="flex items-center justify-between" style={{ color: '#64748b', marginBottom: '0.5rem', fontSize: '0.85rem', fontWeight: 600 }}>
-            <span>Total Merchandise</span>
-            <Package size={20} color="#1d4ed8" />
+            <span>Products</span>
+            <Package size={20} />
           </div>
           <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a' }}>{products.length}</div>
           <div style={{ fontSize: '0.75rem', color: '#16a34a', fontWeight: 600, marginTop: '4px' }}>
@@ -297,8 +297,8 @@ export const AdminDashboard: React.FC = () => {
 
         <div className="card" style={{ padding: '1.25rem' }}>
           <div className="flex items-center justify-between" style={{ color: '#64748b', marginBottom: '0.5rem', fontSize: '0.85rem', fontWeight: 600 }}>
-            <span>Total Orders Placed</span>
-            <ShoppingBag size={20} color="#d97706" />
+            <span>Orders</span>
+            <ShoppingBag size={20} />
           </div>
           <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a' }}>{ordersSummary.totalOrders}</div>
           <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '4px' }}>Across all university students</div>
@@ -306,8 +306,8 @@ export const AdminDashboard: React.FC = () => {
 
         <div className="card" style={{ padding: '1.25rem' }}>
           <div className="flex items-center justify-between" style={{ color: '#64748b', marginBottom: '0.5rem', fontSize: '0.85rem', fontWeight: 600 }}>
-            <span>Total Revenue</span>
-            <DollarSign size={20} color="#16a34a" />
+            <span>Revenue</span>
+            <DollarSign size={20} />
           </div>
           <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#16a34a' }}>
             ฿{ordersSummary.totalRevenue.toFixed(2)}
@@ -317,8 +317,8 @@ export const AdminDashboard: React.FC = () => {
 
         <div className="card" style={{ padding: '1.25rem' }}>
           <div className="flex items-center justify-between" style={{ color: '#64748b', marginBottom: '0.5rem', fontSize: '0.85rem', fontWeight: 600 }}>
-            <span>Registered Accounts</span>
-            <Users size={20} color="#6b21a8" />
+            <span>Accounts</span>
+            <Users size={20} />
           </div>
           <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a' }}>{usersList.length || 5}</div>
           <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '4px' }}>Entra ID authenticated</div>
@@ -326,19 +326,19 @@ export const AdminDashboard: React.FC = () => {
       </div>
 
       {/* Navigation Sub-Tabs */}
-      <div className="flex items-center gap-2" style={{ borderBottom: '1px solid var(--border)', marginBottom: '1.5rem', paddingBottom: '0.5rem' }}>
+      <div className="flex items-center gap-2 admin-tabs" style={{ borderBottom: '1px solid var(--border)', marginBottom: '1.5rem', paddingBottom: '0.5rem' }}>
         <button
           className={`btn btn-sm ${activeTab === 'inventory' ? 'btn-primary' : 'btn-secondary'}`}
           onClick={() => setActiveTab('inventory')}
         >
-          <Package size={15} /> Merchandise Inventory
+          <Package size={15} /> Inventory
         </button>
 
         <button
           className={`btn btn-sm ${activeTab === 'orders' ? 'btn-primary' : 'btn-secondary'}`}
           onClick={() => setActiveTab('orders')}
         >
-          <ShoppingBag size={15} /> Orders & Fulfillment ({orders.length})
+          <ShoppingBag size={15} /> Orders ({orders.length})
         </button>
 
         {user?.role === 'Admin' && (
@@ -346,7 +346,7 @@ export const AdminDashboard: React.FC = () => {
             className={`btn btn-sm ${activeTab === 'users' ? 'btn-primary' : 'btn-secondary'}`}
             onClick={() => setActiveTab('users')}
           >
-            <Users size={15} /> User Management & Roles
+            <Users size={15} /> Users
           </button>
         )}
 
@@ -354,7 +354,7 @@ export const AdminDashboard: React.FC = () => {
           className={`btn btn-sm ${activeTab === 'peer-api' ? 'btn-primary' : 'btn-secondary'}`}
           onClick={() => setActiveTab('peer-api')}
         >
-          <Key size={15} /> Peer API & Partner Tools
+          <Key size={15} /> Integrations
         </button>
 
         {user?.role === 'Admin' && (
@@ -370,7 +370,7 @@ export const AdminDashboard: React.FC = () => {
       {/* TAB 1: INVENTORY MANAGEMENT */}
       {activeTab === 'inventory' && (
         <div className="card" style={{ overflow: 'hidden' }}>
-          <div style={{ overflowX: 'auto' }}>
+          <div className="responsive-table" style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
               <thead>
                 <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid var(--border)', color: '#475569' }}>
@@ -454,7 +454,7 @@ export const AdminDashboard: React.FC = () => {
       {/* TAB 2: ORDERS MANAGEMENT */}
       {activeTab === 'orders' && (
         <div className="card" style={{ overflow: 'hidden' }}>
-          <div style={{ overflowX: 'auto' }}>
+          <div className="responsive-table" style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
               <thead>
                 <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid var(--border)', color: '#475569' }}>
@@ -522,7 +522,7 @@ export const AdminDashboard: React.FC = () => {
             </p>
           </div>
 
-          <div style={{ overflowX: 'auto' }}>
+          <div className="responsive-table" style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
               <thead>
                 <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid var(--border)', color: '#475569' }}>
@@ -568,7 +568,7 @@ export const AdminDashboard: React.FC = () => {
 
       {/* TAB 4: PEER API & PARTNER TOOLS */}
       {activeTab === 'peer-api' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: '1.5rem' }}>
+        <div className="admin-integrations-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: '1.5rem' }}>
           {/* Tool 1: Exposed Partner API Tester */}
           <div className="card" style={{ padding: '1.5rem' }}>
             <div className="flex items-center gap-2" style={{ marginBottom: '0.75rem' }}>
@@ -762,7 +762,7 @@ export const AdminDashboard: React.FC = () => {
       {showProductModal && (
         <div className="modal-overlay" onClick={() => setShowProductModal(false)}>
           <div
-            className="card animate-fade-in"
+            className="card animate-fade-in admin-product-dialog"
             style={{ width: '100%', maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto', padding: '2rem' }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -793,7 +793,7 @@ export const AdminDashboard: React.FC = () => {
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div className="admin-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '0.35rem' }}>
                     Category *
@@ -827,7 +827,7 @@ export const AdminDashboard: React.FC = () => {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div className="admin-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '0.35rem' }}>
                     Stock Units *
@@ -858,6 +858,7 @@ export const AdminDashboard: React.FC = () => {
 
               {/* Department Discount Settings */}
               <div
+                className="admin-form-grid"
                 style={{
                   backgroundColor: '#f8fafc',
                   border: '1px solid var(--border)',

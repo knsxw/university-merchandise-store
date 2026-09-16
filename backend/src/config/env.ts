@@ -19,21 +19,37 @@ export interface AppConfig {
   peerEducoreApiUrl: string;
   peerEducoreApiKey: string;
   partnerExposedApiKey: string;
+  corsOrigins: string[];
   adminEmails: string[];
 }
 
+const DEFAULT_DATABASE_URL = 'mysql://root:merch_secure_pass@localhost:3306/merch_store';
+const DEFAULT_JWT_SECRET = 'super_secret_jwt_signing_key_change_in_production';
+const DEFAULT_PEER_API_KEY = 'educore_partner_secret_key_12345';
+const DEFAULT_PARTNER_API_KEY = 'partner_incoming_api_key_98765';
+
+const parseCsv = (value?: string): string[] =>
+  (value || '')
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+
+const isConfiguredValue = (value?: string): value is string =>
+  !!value && !value.toLowerCase().includes('here');
+
 /**
- * True when AZURE_CLIENT_ID holds a real value (not unset / not a placeholder).
  * Gates whether the /auth/microsoft endpoint enforces verified ID tokens.
+ * Both values are required so the frontend and backend cannot accidentally
+ * disagree about whether real Entra authentication is active.
  */
 export const isEntraConfigured = (): boolean =>
-  !!config.azureClientId && !config.azureClientId.includes('here');
+  isConfiguredValue(config.azureClientId) && isConfiguredValue(config.azureTenantId);
 
 export const config: AppConfig = {
   port: parseInt(process.env.PORT || '5000', 10),
   nodeEnv: process.env.NODE_ENV || 'development',
-  databaseUrl: process.env.DATABASE_URL || 'mysql://root:merch_secure_pass@localhost:3306/merch_store',
-  jwtSecret: process.env.JWT_SECRET || 'super_secret_jwt_signing_key_change_in_production',
+  databaseUrl: process.env.DATABASE_URL || DEFAULT_DATABASE_URL,
+  jwtSecret: process.env.JWT_SECRET || DEFAULT_JWT_SECRET,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   azureTenantId: process.env.AZURE_TENANT_ID,
   azureClientId: process.env.AZURE_CLIENT_ID,
@@ -42,13 +58,47 @@ export const config: AppConfig = {
   openaiApiKey: process.env.OPENAI_API_KEY,
   openaiModel: process.env.OPENAI_MODEL || 'gpt-4o-mini',
   peerEducoreApiUrl: process.env.PEER_EDUCORE_API_URL || 'https://api.educore.mock/api',
-  peerEducoreApiKey: process.env.PEER_EDUCORE_API_KEY || 'educore_partner_secret_key_12345',
-  partnerExposedApiKey: process.env.PARTNER_EXPOSED_API_KEY || 'partner_incoming_api_key_98765',
-  adminEmails: (process.env.ADMIN_EMAILS || '')
-    .split(',')
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean),
+  peerEducoreApiKey: process.env.PEER_EDUCORE_API_KEY || DEFAULT_PEER_API_KEY,
+  partnerExposedApiKey: process.env.PARTNER_EXPOSED_API_KEY || DEFAULT_PARTNER_API_KEY,
+  corsOrigins: parseCsv(process.env.CORS_ORIGINS),
+  adminEmails: parseCsv(process.env.ADMIN_EMAILS).map((email) => email.toLowerCase()),
 };
+
+/**
+ * Refuse to boot a production server with demo credentials or incomplete auth.
+ * This runs after Key Vault initialization so secrets loaded from the vault count.
+ */
+export function validateProductionConfig(): void {
+  if (config.nodeEnv !== 'production') return;
+
+  const errors: string[] = [];
+
+  if (!config.databaseUrl || config.databaseUrl === DEFAULT_DATABASE_URL || config.databaseUrl.includes('merch_secure_pass')) {
+    errors.push('DATABASE_URL must use production database credentials');
+  }
+  if (!config.jwtSecret || config.jwtSecret === DEFAULT_JWT_SECRET || config.jwtSecret.length < 32) {
+    errors.push('JWT_SECRET must be a unique value of at least 32 characters');
+  }
+  if (!isConfiguredValue(config.azureClientId)) {
+    errors.push('AZURE_CLIENT_ID must be configured');
+  }
+  if (!isConfiguredValue(config.azureTenantId)) {
+    errors.push('AZURE_TENANT_ID must be configured');
+  }
+  if (!config.partnerExposedApiKey || config.partnerExposedApiKey === DEFAULT_PARTNER_API_KEY) {
+    errors.push('PARTNER_EXPOSED_API_KEY must be replaced');
+  }
+  if (!config.peerEducoreApiKey || config.peerEducoreApiKey === DEFAULT_PEER_API_KEY) {
+    errors.push('PEER_EDUCORE_API_KEY must be replaced');
+  }
+  if (config.corsOrigins.length === 0) {
+    errors.push('CORS_ORIGINS must list the permitted frontend origin(s)');
+  }
+
+  if (errors.length > 0) {
+    throw new Error(`Unsafe production configuration:\n- ${errors.join('\n- ')}`);
+  }
+}
 
 /**
  * Initializes secrets from Azure Key Vault when running on Azure Cloud

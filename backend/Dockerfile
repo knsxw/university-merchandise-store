@@ -1,4 +1,4 @@
-FROM node:20-alpine
+FROM node:22-alpine
 
 WORKDIR /app
 
@@ -21,5 +21,6 @@ RUN npx prisma generate
 # Expose backend port
 EXPOSE 5000
 
-# Start command with auto-migration/push and start
-CMD ["sh", "-c", "npx prisma db push && npx prisma db seed && npm run dev"]
+# Apply the schema in every environment. Production creates only the required
+# RBAC roles; demo users/products and the source watcher remain development-only.
+CMD ["sh", "-c", "npx prisma db push && if [ \"$NODE_ENV\" = \"production\" ]; then npm run prisma:bootstrap && npm run build && npm start; else npx prisma db seed && npm run dev; fi"]

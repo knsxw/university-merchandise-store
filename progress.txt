@@ -1,0 +1,158 @@
+PROGRESS REPORT — Smart University Merchandise Store
+Course: CSX4110 Backend Application Development, Section 541 (1/2026)
+Team: Khine Khant (6611718), Siva Paoren (6630064), Thant Zin Oo (6722060)
+Last updated: September 15, 2026
+
+====================================================================
+1. PROJECT SUMMARY
+====================================================================
+A full-stack e-commerce platform for university merchandise with:
+  - Node.js + Express + TypeScript backend
+  - React 18 + TypeScript + Vite frontend
+  - MySQL 8 database via Prisma ORM
+  - Microsoft Entra ID (Azure AD) authentication with role-based access
+  - OpenAI GPT-4 AI product description generation
+  - Peer API integration (consume + expose) with a partner team
+  - Docker Compose deployment behind an Nginx reverse proxy
+
+====================================================================
+2. COMPLETED WORK (MAIN BASELINE + CURRENT VERIFIED UPDATES)
+====================================================================
+
+Backend API (Node.js + Express + TypeScript + Prisma)
+  - Database schema with 9 models: Role, User, Category, Product,
+    Cart, CartItem, Order, OrderItem, SiteSetting — plus a seed
+    script with demo users for each role.
+  - Full REST API:
+      * Auth:        POST /api/auth/microsoft (Entra ID),
+                     POST /api/auth/dev-login, GET /api/auth/me
+      * Products:    CRUD + GET /categories + POST /ai-description
+                     (Staff/Admin only)
+      * Cart:        add / update / remove / clear items
+      * Orders:      checkout, my-orders, all orders + status
+                     updates (Staff/Admin only)
+      * Users:       list users, list roles, change user roles
+                     (Admin only)
+      * Settings:    get/update site settings (AI provider config
+                     stored in database)
+      * Peer API:    GET /api/products/available stock
+                     endpoint secured with x-api-key
+  - Security middleware stack: helmet, CORS, JWT authentication,
+    RBAC role authorization (Student/Staff/Admin), API-key check
+    for partner endpoints, centralized error handler.
+  - Production now uses an explicit CORS origin allowlist and
+    refuses to start with demo database credentials, a weak/default
+    JWT secret, incomplete Entra configuration, demo API keys, or
+    an empty CORS allowlist.
+
+Authentication & RBAC
+  - Real Microsoft Entra ID sign-in implemented with MSAL
+    (Authorization Code + PKCE) on the frontend.
+  - Backend validates the returned ID token against the tenant's
+    JWKS public keys (signature, issuer, audience, expiry), then
+    upserts the user and issues the app's own JWT.
+  - Real university-account login has been tested end to end:
+    Microsoft redirect, backend token exchange, local JWT session,
+    user profile, cart, and protected order history all succeeded.
+  - Dev fallback login + role switcher remain available only when
+    Entra ID is not configured and the backend is not in production.
+    When real Entra login is active, the controls are hidden and the
+    dev-login API rejects direct requests.
+  - ADMIN_EMAILS auto-promotes configured accounts to Admin on
+    first verified login.
+
+AI Integration (OpenAI GPT-4)
+  - Staff/Admin can auto-generate professional product
+    descriptions (POST /api/products/ai-description).
+  - AI provider settings (model, key, prompts) are stored in the
+    database and editable at runtime via the settings API —
+    including generation reliability fixes.
+
+Peer API Integration (both directions, per assignment)
+  - CONSUMING: on checkout of department-specific items (e.g. CS
+    jacket), our backend calls the partner EduCore Course
+    Registration API (GET /students/{id}/department, x-api-key) to
+    verify department enrollment and apply the 20% student
+    discount.
+  - EXPOSING: GET /api/products/available (x-api-key protected)
+    lets partner systems query live store stock.
+
+Frontend (React + TypeScript + Vite)
+  - Customer storefront: product listing, product detail page,
+    cart drawer, checkout, order history.
+  - Staff/Admin portal: AdminDashboard for product management,
+    AI description generation, order status management, and user
+    role management.
+  - AuthContext (Entra ID / dev switcher) and CartContext state
+    management; Axios API client; responsive custom design system.
+  - Login and account menus now remove all dev-profile and role-
+    switching controls whenever real Entra ID is configured.
+
+DevOps & Deployment
+  - Multi-container Docker Compose: MySQL + backend + frontend +
+    Nginx reverse proxy, all wired together (single
+    `docker compose up --build`).
+  - Nginx routes /api/* to the backend and everything else to the
+    frontend.
+  - Containers auto-apply the Prisma schema. Demo data and the
+    TypeScript source watcher run only in development. Production
+    bootstraps only the required Admin/Staff/Student roles, then builds
+    and runs the compiled server without inserting demo users/products.
+  - Environment variable template (.env.example) shared across
+    services; Azure Key Vault integration for secrets prepared.
+  - Partner API keys are no longer printed in backend startup logs.
+  - Production checkout fails closed if the EduCore verification
+    service is unavailable instead of granting a mock discount.
+
+Documentation
+  - README covering architecture (Mermaid diagram), setup,
+    API examples, seed accounts, Entra ID configuration guide,
+    and Azure deployment guide.
+
+====================================================================
+3. DEMO FLOW (what we can show live)
+====================================================================
+  1. `docker compose up --build` — all 4 services start, DB
+     auto-seeded.
+  2. Sign in with a real Microsoft university account and show the
+     verified Student session and protected order history. For an
+     offline demo, remove the Entra variables and use dev profiles.
+  3. Staff: create a product, click "Generate AI Description"
+     (live GPT-4 call).
+  4. Student: add CS jacket to cart, check out — backend calls the
+     partner EduCore API, confirms CS department, applies 20%
+     discount.
+  5. Partner view: GET /api/products/available with x-api-key
+     returns live stock.
+
+====================================================================
+4. LATEST VERIFICATION — SEPTEMBER 15, 2026
+====================================================================
+  - Frontend TypeScript/Vite production build: PASSED.
+  - Backend Prisma/TypeScript production build: PASSED.
+  - Docker Compose configuration and rebuilt four-service stack:
+    PASSED (MySQL exposed on host port 3307 locally because another
+    project is using 3306; internal service port remains 3306).
+  - Microsoft Entra metadata and public-key discovery: PASSED.
+  - Real Microsoft sign-in and POST /api/auth/microsoft: PASSED (200).
+  - Authenticated cart and order-history endpoints: PASSED (200).
+  - Malformed Microsoft ID token rejection: PASSED (401).
+  - Configured Entra mode dev-login rejection: PASSED (403).
+  - Unsafe production settings rejected and safe settings accepted:
+    PASSED.
+  - Production-safe RBAC bootstrap is idempotent and inserts no demo
+    users or products: PASSED.
+  - Backend production image uses Node.js 22 to satisfy the installed
+    Azure SDK runtime requirements.
+
+====================================================================
+5. REMAINING / NEXT STEPS
+====================================================================
+  - Add the final HTTPS production redirect URI to the Entra app
+    registration when the Azure deployment hostname is available.
+  - Deploy to an Azure Linux VM with Azure Key Vault-backed
+    secrets and HTTPS via Let's Encrypt (deployment guide and
+    compose file ready).
+  - Add automated tests (unit + API integration) and CI.
+  - Joint end-to-end testing session with the partner team's
+    EduCore API.

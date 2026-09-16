@@ -27,6 +27,10 @@ export async function fetchStudentDepartmentFromPeerApi(
 
     return response.data;
   } catch (error) {
+    if (config.nodeEnv === 'production') {
+      throw new Error('Peer EduCore verification is currently unavailable. Discount eligibility could not be verified.');
+    }
+
     console.warn(
       `⚠️ Peer EduCore API unavailable at ${endpoint}. Using local student profile fallback verification.`
     );

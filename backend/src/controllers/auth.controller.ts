@@ -165,6 +165,11 @@ export const microsoftLogin = async (req: Request, res: Response): Promise<void>
     // ---- Legacy profile exchange (DEV ONLY) ------------------------------
     // Only available while Entra ID is unconfigured, so local development
     // without an Azure app registration keeps working.
+    if (config.nodeEnv === 'production') {
+      res.status(403).json({ error: 'Unverified profile login is disabled in production. Use Microsoft Entra ID login.' });
+      return;
+    }
+
     if (!email || !name) {
       res.status(400).json({
         error: isEntraConfigured()
@@ -228,8 +233,8 @@ export const microsoftLogin = async (req: Request, res: Response): Promise<void>
  */
 export const devLogin = async (req: Request, res: Response): Promise<void> => {
   try {
-    if (config.nodeEnv === 'production') {
-      res.status(403).json({ error: 'Dev login is disabled in production. Use Microsoft Entra ID login.' });
+    if (config.nodeEnv === 'production' || isEntraConfigured()) {
+      res.status(403).json({ error: 'Dev login is disabled while Microsoft Entra ID login is active.' });
       return;
     }
 
