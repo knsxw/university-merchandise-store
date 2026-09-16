@@ -304,17 +304,55 @@ authenticated in production, startup stops instead of silently using fallback cr
 ### Deploy on an Azure VM
 
 1. **Provision an Azure Linux VM**.
-2. **Install Docker & Docker Compose**:
-   ```bash
-   sudo apt-get update && sudo apt-get install -y docker.io docker-compose
-   ```
-3. **Deploy Containers**:
+2. **Install Docker Engine and the Docker Compose plugin** by following Docker's
+   [Ubuntu installation guide](https://docs.docker.com/engine/install/ubuntu/). Compose
+   v2.24 or newer is required by the production overlay.
+3. **Clone the application**:
    ```bash
    git clone <REPO_URL>
    cd university-merchandise-store
-   docker compose up -d
+   cp .env.example .env
    ```
-4. **Setup HTTPS with Let's Encrypt / Certbot** on Nginx reverse proxy.
+4. **Configure production environment values**. In particular, set the public HTTPS
+   origins used by CORS and Microsoft Entra ID:
+
+   ```dotenv
+   NODE_ENV=production
+   CORS_ORIGINS=https://store.example.edu
+   VITE_AZURE_REDIRECT_URI=https://store.example.edu
+   CERTBOT_DOMAIN=store.example.edu
+   CERTBOT_EMAIL=admin@example.edu
+   ```
+
+   Add the same HTTPS redirect URI to the Microsoft Entra app registration. Point the
+   domain's DNS record to the VM and allow inbound TCP ports 80 and 443 in its network
+   security group.
+
+5. **Issue the first certificate and start production HTTPS**:
+
+   ```bash
+   ./scripts/init-letsencrypt.sh
+   ```
+
+   The script safely reads `CERTBOT_DOMAIN` and `CERTBOT_EMAIL` from `.env`; it does
+   not evaluate the environment file as a shell script.
+
+   The production overlay keeps MySQL, the backend, and the frontend off public host
+   ports. Certbot checks for renewal every 12 hours, and Nginx reloads periodically to
+   pick up a renewed certificate. Port 80 remains open only for Let's Encrypt HTTP-01
+   validation and redirects normal requests to HTTPS.
+
+   Subsequent deployments do not need the bootstrap script:
+
+   ```bash
+   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+   ```
+
+   Local development is unchanged and does not run Certbot:
+
+   ```bash
+   docker compose up --build
+   ```
 
 Azure's JavaScript guidance recommends managed identity in hosted environments and
 `DefaultAzureCredential` for a consistent development/production authentication flow. See
