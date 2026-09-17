@@ -19,33 +19,10 @@ services:
       - "443:443"
     volumes:
       - ${NGINX_CONFIG_PATH:-./nginx.prod.conf}:/etc/nginx/nginx.conf:ro
-      - certbot_www:/var/www/certbot:ro
-      - certbot_conf:/etc/letsencrypt:ro
-    # Certbot writes renewed certificates to the shared volume. Reload Nginx
-    # periodically so it begins serving a renewed certificate automatically.
+      - /etc/letsencrypt:/etc/letsencrypt:ro
     command:
       - /bin/sh
       - -c
       - |
         (while sleep 6h; do nginx -t && nginx -s reload; done) &
         exec nginx -g 'daemon off;'
-
-  certbot:
-    image: certbot/certbot:latest
-    container_name: merch_certbot
-    restart: unless-stopped
-    volumes:
-      - certbot_www:/var/www/certbot
-      - certbot_conf:/etc/letsencrypt
-    # It is safe to check frequently: Certbot renews only certificates that are
-    # close enough to expiry.
-    entrypoint: /bin/sh
-    command: >-
-      -c 'trap exit TERM; while :; do
-      certbot renew --webroot --webroot-path /var/www/certbot --quiet;
-      sleep 12h & wait $$!;
-      done'
-
-volumes:
-  certbot_www:
-  certbot_conf:

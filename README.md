@@ -320,33 +320,27 @@ authenticated in production, startup stops instead of silently using fallback cr
    NODE_ENV=production
    CORS_ORIGINS=https://store.example.edu
    VITE_AZURE_REDIRECT_URI=https://store.example.edu
-   CERTBOT_DOMAIN=store.example.edu
-   CERTBOT_EMAIL=admin@example.edu
    ```
 
    Add the same HTTPS redirect URI to the Microsoft Entra app registration. Point the
    domain's DNS record to the VM and allow inbound TCP ports 80 and 443 in its network
    security group.
 
-5. **Issue the first certificate and start production HTTPS**:
+5. **Configure HTTPS and start production**. Install Certbot directly on the VM and
+   obtain a certificate for the public hostname before starting the containers. Update
+   the certificate paths in `nginx.prod.conf` if the hostname differs from the configured
+   value, then start the production stack:
 
    ```bash
-   ./scripts/init-letsencrypt.sh
-   ```
-
-   The script safely reads `CERTBOT_DOMAIN` and `CERTBOT_EMAIL` from `.env`; it does
-   not evaluate the environment file as a shell script.
-
-   The production overlay keeps MySQL, the backend, and the frontend off public host
-   ports. Certbot checks for renewal every 12 hours, and Nginx reloads periodically to
-   pick up a renewed certificate. Port 80 remains open only for Let's Encrypt HTTP-01
-   validation and redirects normal requests to HTTPS.
-
-   Subsequent deployments do not need the bootstrap script:
-
-   ```bash
+   sudo certbot certificates
+   sudo certbot renew --dry-run
    docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
    ```
+
+   The production overlay keeps MySQL, the backend, and the frontend off public host
+   ports. The VM's Certbot installation manages renewal, while Nginx periodically reloads
+   to pick up renewed certificate files mounted read-only from `/etc/letsencrypt`. Port 80
+   redirects normal requests to HTTPS.
 
    Local development is unchanged and does not run Certbot:
 
