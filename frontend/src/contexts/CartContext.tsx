@@ -7,7 +7,7 @@ interface CartContextType {
   cart: Cart | null;
   isDrawerOpen: boolean;
   loading: boolean;
-  addToCart: (productId: number, quantity?: number) => Promise<void>;
+  addToCart: (productId: number, quantity?: number) => Promise<boolean>;
   updateQuantity: (itemId: number, quantity: number) => Promise<void>;
   removeItem: (itemId: number) => Promise<void>;
   clearCart: () => Promise<void>;
@@ -45,7 +45,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const addToCart = async (productId: number, quantity: number = 1) => {
     if (!user) {
       alert('Please log in with your University account to add items to cart.');
-      return;
+      return false;
     }
 
     setLoading(true);
@@ -53,8 +53,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await api.post('/cart/add', { productId, quantity });
       await fetchCart();
       setIsDrawerOpen(true);
+      return true;
     } catch (err: any) {
       alert(err.response?.data?.error || 'Failed to add item to cart');
+      return false;
     } finally {
       setLoading(false);
     }

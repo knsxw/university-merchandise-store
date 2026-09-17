@@ -1,6 +1,9 @@
 import { Request, Response } from 'express';
 import prisma from '../config/db';
 import { verifyDepartmentEligibility } from '../services/peer.service';
+import { parseInteger } from '../utils/validation';
+
+class InsufficientStockError extends Error {}
 
 /**
  * Checkout user's cart and create an order
@@ -104,14 +107,20 @@ export const checkout = async (req: Request, res: Response): Promise<void> => {
 
       // 2. Decrement stock for purchased products
       for (const item of cart.items) {
-        await tx.product.update({
-          where: { id: item.productId },
+        const result = await tx.product.updateMany({
+          where: {
+            id: item.productId,
+            stock: { gte: item.quantity },
+          },
           data: {
             stock: {
               decrement: item.quantity,
             },
           },
         });
+        if (result.count !== 1) {
+          throw new InsufficientStockError(`Insufficient stock for product "${item.product.name}". Please refresh your cart and try again.`);
+        }
       }
 
       // 3. Clear cart
@@ -127,6 +136,10 @@ export const checkout = async (req: Request, res: Response): Promise<void> => {
       order,
     });
   } catch (error) {
+    if (error instanceof InsufficientStockError) {
+      res.status(409).json({ error: error.message });
+      return;
+    }
     res.status(500).json({ error: 'Checkout failed', details: (error as Error).message });
   }
 };
@@ -200,8 +213,13 @@ export const getAllOrders = async (req: Request, res: Response): Promise<void> =
  */
 export const updateOrderStatus = async (req: Request, res: Response): Promise<void> => {
   try {
-    const id = parseInt(req.params.id, 10);
+    const id = parseInteger(req.params.id, { min: 1 });
     const { status } = req.body;
+
+    if (id === null) {
+      res.status(400).json({ error: 'Order ID must be a positive integer' });
+      return;
+    }
 
     const validStatuses = ['PENDING', 'PROCESSING', 'COMPLETED', 'CANCELLED'];
     if (!validStatuses.includes(status)) {

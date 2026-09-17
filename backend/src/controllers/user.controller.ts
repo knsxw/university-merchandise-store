@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../config/db';
+import { parseInteger } from '../utils/validation';
 
 /**
  * Get all users with roles (Admin only)
@@ -27,11 +28,23 @@ export const getAllUsers = async (req: Request, res: Response): Promise<void> =>
  */
 export const updateUserRole = async (req: Request, res: Response): Promise<void> => {
   try {
-    const id = parseInt(req.params.id, 10);
+    const id = parseInteger(req.params.id, { min: 1 });
     const { roleId, department } = req.body;
 
+    if (id === null) {
+      res.status(400).json({ error: 'User ID must be a positive integer' });
+      return;
+    }
+
     const data: any = {};
-    if (roleId !== undefined) data.roleId = parseInt(roleId, 10);
+    if (roleId !== undefined) {
+      const parsedRoleId = parseInteger(roleId, { min: 1 });
+      if (parsedRoleId === null) {
+        res.status(400).json({ error: 'roleId must be a positive integer' });
+        return;
+      }
+      data.roleId = parsedRoleId;
+    }
     if (department !== undefined) data.department = department;
 
     const updatedUser = await prisma.user.update({

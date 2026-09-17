@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../config/db';
+import { parseInteger } from '../utils/validation';
 
 /**
  * Get current user's cart with items and subtotal
@@ -68,15 +69,20 @@ export const addToCart = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const qty = parseInt(quantity, 10);
-    if (qty <= 0) {
+    const parsedProductId = parseInteger(productId, { min: 1 });
+    const qty = parseInteger(quantity, { min: 1 });
+    if (parsedProductId === null) {
+      res.status(400).json({ error: 'productId must be a positive integer' });
+      return;
+    }
+    if (qty === null) {
       res.status(400).json({ error: 'Quantity must be at least 1' });
       return;
     }
 
     // Verify product exists and has stock
     const product = await prisma.product.findUnique({
-      where: { id: parseInt(productId, 10) },
+      where: { id: parsedProductId },
     });
 
     if (!product) {
@@ -138,11 +144,16 @@ export const addToCart = async (req: Request, res: Response): Promise<void> => {
 export const updateCartItem = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.user!.userId;
-    const itemId = parseInt(req.params.itemId, 10);
+    const itemId = parseInteger(req.params.itemId, { min: 1 });
     const { quantity } = req.body;
 
-    const qty = parseInt(quantity, 10);
-    if (qty < 0) {
+    if (itemId === null) {
+      res.status(400).json({ error: 'itemId must be a positive integer' });
+      return;
+    }
+
+    const qty = parseInteger(quantity, { min: 0 });
+    if (qty === null) {
       res.status(400).json({ error: 'Quantity must be 0 or positive' });
       return;
     }
@@ -193,7 +204,12 @@ export const updateCartItem = async (req: Request, res: Response): Promise<void>
 export const removeCartItem = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.user!.userId;
-    const itemId = parseInt(req.params.itemId, 10);
+    const itemId = parseInteger(req.params.itemId, { min: 1 });
+
+    if (itemId === null) {
+      res.status(400).json({ error: 'itemId must be a positive integer' });
+      return;
+    }
 
     const cart = await prisma.cart.findUnique({ where: { userId } });
     if (!cart) {

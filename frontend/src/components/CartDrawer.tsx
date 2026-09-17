@@ -10,7 +10,7 @@ interface CartDrawerProps {
 }
 
 export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderSuccess }) => {
-  const { cart, isDrawerOpen, closeDrawer, updateQuantity, removeItem, clearCart } = useCart();
+  const { cart, isDrawerOpen, closeDrawer, updateQuantity, removeItem, fetchCart } = useCart();
   const { user } = useAuth();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
 
@@ -31,7 +31,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderSuccess }) => {
     setIsCheckingOut(true);
     try {
       const res = await api.post('/orders/checkout');
-      await clearCart();
+      await fetchCart();
       closeDrawer();
       onOrderSuccess(res.data.order);
     } catch (err: any) {
