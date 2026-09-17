@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ChevronDown,
   LayoutDashboard,
@@ -24,6 +24,31 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
   const { user, switchDevRole, logout } = useAuth();
   const { cart, openDrawer } = useCart();
   const [showRoleMenu, setShowRoleMenu] = useState<boolean>(false);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showRoleMenu) return;
+
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      if (!accountMenuRef.current?.contains(event.target as Node)) {
+        setShowRoleMenu(false);
+      }
+    };
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowRoleMenu(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', closeOnOutsideClick);
+    document.addEventListener('keydown', closeOnEscape);
+
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsideClick);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [showRoleMenu]);
 
   const selectDevRole = async (role: 'Admin' | 'Staff' | 'Student') => {
     await switchDevRole(role);
@@ -75,11 +100,12 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
           </button>
 
           {user ? (
-            <div style={{ position: 'relative' }}>
+            <div ref={accountMenuRef} style={{ position: 'relative' }}>
               <button
                 className="btn btn-secondary account-trigger"
                 onClick={() => setShowRoleMenu((visible) => !visible)}
                 aria-expanded={showRoleMenu}
+                aria-controls="account-menu"
               >
                 <span className="account-avatar">{user.name.charAt(0).toUpperCase()}</span>
                 <span className="account-copy">
@@ -90,7 +116,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
               </button>
 
               {showRoleMenu && (
-                <div className="card account-menu">
+                <div id="account-menu" className="card account-menu">
                   <div className="menu-header">
                     <div className="menu-label">Signed in as</div>
                     <div className="account-name" style={{ marginTop: '4px' }}>{user.name}</div>

@@ -235,6 +235,7 @@ img {
   color: #18181b;
   background: none;
   border: 0;
+  text-align: left;
   cursor: pointer;
 }
 
