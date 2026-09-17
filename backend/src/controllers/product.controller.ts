@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../config/db';
 import { generateProductDescription } from '../services/ai.service';
+import { parseFiniteNumber, parseInteger } from '../utils/validation';
 
 /**
  * Get all products with optional category, search, and department filters
@@ -12,7 +13,12 @@ export const getAllProducts = async (req: Request, res: Response): Promise<void>
     const where: any = {};
 
     if (categoryId) {
-      where.categoryId = parseInt(categoryId as string, 10);
+      const parsedCategoryId = parseInteger(categoryId, { min: 1 });
+      if (parsedCategoryId === null) {
+        res.status(400).json({ error: 'categoryId must be a positive integer' });
+        return;
+      }
+      where.categoryId = parsedCategoryId;
     }
 
     if (department) {
@@ -49,7 +55,11 @@ export const getAllProducts = async (req: Request, res: Response): Promise<void>
  */
 export const getProductById = async (req: Request, res: Response): Promise<void> => {
   try {
-    const id = parseInt(req.params.id, 10);
+    const id = parseInteger(req.params.id, { min: 1 });
+    if (id === null) {
+      res.status(400).json({ error: 'Product ID must be a positive integer' });
+      return;
+    }
 
     const product = await prisma.product.findUnique({
       where: { id },
@@ -79,13 +89,28 @@ export const createProduct = async (req: Request, res: Response): Promise<void> 
   try {
     const { name, description, price, stock, categoryId, imageUrl, department, discountPct, useAiDescription } = req.body;
 
-    if (!name || price === undefined || !categoryId) {
+    if (typeof name !== 'string' || name.trim() === '' || price === undefined || categoryId === undefined) {
       res.status(400).json({ error: 'Missing required fields: name, price, categoryId' });
       return;
     }
 
+    const parsedPrice = parseFiniteNumber(price, { min: 0 });
+    const parsedStock = parseInteger(stock ?? 0, { min: 0 });
+    const parsedCategoryId = parseInteger(categoryId, { min: 1 });
+    const parsedDiscount = parseFiniteNumber(discountPct ?? 0, { min: 0, max: 100 });
+    if (parsedPrice === null || parsedStock === null || parsedCategoryId === null || parsedDiscount === null) {
+      res.status(400).json({
+        error: 'price and stock must be non-negative numbers, categoryId must be a positive integer, and discountPct must be between 0 and 100',
+      });
+      return;
+    }
+    if (description !== undefined && typeof description !== 'string') {
+      res.status(400).json({ error: 'description must be a string' });
+      return;
+    }
+
     const category = await prisma.category.findUnique({
-      where: { id: parseInt(categoryId, 10) },
+      where: { id: parsedCategoryId },
     });
 
     if (!category) {
@@ -106,13 +131,13 @@ export const createProduct = async (req: Request, res: Response): Promise<void> 
 
     const newProduct = await prisma.product.create({
       data: {
-        name,
+        name: name.trim(),
         description: finalDescription,
-        price: parseFloat(price),
-        stock: parseInt(stock || '0', 10),
+        price: parsedPrice,
+        stock: parsedStock,
         imageUrl: imageUrl || 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=800&q=80',
         department: department || null,
-        discountPct: discountPct ? parseFloat(discountPct) : 0.0,
+        discountPct: parsedDiscount,
         categoryId: category.id,
         createdBy: req.user?.userId || null,
       },
@@ -135,18 +160,63 @@ export const createProduct = async (req: Request, res: Response): Promise<void> 
  */
 export const updateProduct = async (req: Request, res: Response): Promise<void> => {
   try {
-    const id = parseInt(req.params.id, 10);
+    const id = parseInteger(req.params.id, { min: 1 });
     const { name, description, price, stock, categoryId, imageUrl, department, discountPct } = req.body;
 
+    if (id === null) {
+      res.status(400).json({ error: 'Product ID must be a positive integer' });
+      return;
+    }
+
     const data: any = {};
-    if (name !== undefined) data.name = name;
-    if (description !== undefined) data.description = description;
-    if (price !== undefined) data.price = parseFloat(price);
-    if (stock !== undefined) data.stock = parseInt(stock, 10);
-    if (categoryId !== undefined) data.categoryId = parseInt(categoryId, 10);
+    if (name !== undefined) {
+      if (typeof name !== 'string' || name.trim() === '') {
+        res.status(400).json({ error: 'name must be a non-empty string' });
+        return;
+      }
+      data.name = name.trim();
+    }
+    if (description !== undefined) {
+      if (typeof description !== 'string') {
+        res.status(400).json({ error: 'description must be a string' });
+        return;
+      }
+      data.description = description;
+    }
+    if (price !== undefined) {
+      const parsed = parseFiniteNumber(price, { min: 0 });
+      if (parsed === null) {
+        res.status(400).json({ error: 'price must be a non-negative number' });
+        return;
+      }
+      data.price = parsed;
+    }
+    if (stock !== undefined) {
+      const parsed = parseInteger(stock, { min: 0 });
+      if (parsed === null) {
+        res.status(400).json({ error: 'stock must be a non-negative integer' });
+        return;
+      }
+      data.stock = parsed;
+    }
+    if (categoryId !== undefined) {
+      const parsed = parseInteger(categoryId, { min: 1 });
+      if (parsed === null) {
+        res.status(400).json({ error: 'categoryId must be a positive integer' });
+        return;
+      }
+      data.categoryId = parsed;
+    }
     if (imageUrl !== undefined) data.imageUrl = imageUrl;
     if (department !== undefined) data.department = department;
-    if (discountPct !== undefined) data.discountPct = parseFloat(discountPct);
+    if (discountPct !== undefined) {
+      const parsed = parseFiniteNumber(discountPct, { min: 0, max: 100 });
+      if (parsed === null) {
+        res.status(400).json({ error: 'discountPct must be between 0 and 100' });
+        return;
+      }
+      data.discountPct = parsed;
+    }
 
     const updatedProduct = await prisma.product.update({
       where: { id },
@@ -168,7 +238,11 @@ export const updateProduct = async (req: Request, res: Response): Promise<void> 
  */
 export const deleteProduct = async (req: Request, res: Response): Promise<void> => {
   try {
-    const id = parseInt(req.params.id, 10);
+    const id = parseInteger(req.params.id, { min: 1 });
+    if (id === null) {
+      res.status(400).json({ error: 'Product ID must be a positive integer' });
+      return;
+    }
 
     await prisma.product.delete({
       where: { id },

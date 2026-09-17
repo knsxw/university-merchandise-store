@@ -30,9 +30,11 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ product, o
       : Number(product.price);
 
   const handleAddToCart = async () => {
-    await addToCart(product.id, quantity);
-    setAddedSuccess(true);
-    setTimeout(() => setAddedSuccess(false), 2000);
+    const added = await addToCart(product.id, quantity);
+    if (added) {
+      setAddedSuccess(true);
+      setTimeout(() => setAddedSuccess(false), 2000);
+    }
   };
 
   return (
