@@ -59,9 +59,10 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
     <header className="navbar">
       <div className="container navbar-inner">
         <button className="brand" onClick={() => setCurrentTab('shop')} aria-label="Open shop">
+          <span className="brand-mark" aria-hidden="true">CS</span>
           <span>
             <span className="brand-name">Campus Store</span>
-            <span className="brand-meta">Official university merchandise</span>
+            <span className="brand-meta">University goods · since 2026</span>
           </span>
         </button>
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { CloudSun, MapPin, Search, ShieldCheck } from 'lucide-react';
+import { ArrowDownRight, CloudSun, MapPin, Search, ShieldCheck } from 'lucide-react';
 import api from '../services/api';
 import { Category, Product, WeatherRecommendation } from '../types';
 import { ProductCard } from '../components/ProductCard';
@@ -77,58 +77,73 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectProduct }) => {
     setAppliedSearchQuery('');
   };
 
+  const featuredProduct = products[0];
+  const featuredImage = featuredProduct?.imageUrl
+    || 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=1200&q=85';
+
   return (
-    <div className="container" style={{ paddingBottom: '64px' }}>
-      <section className="hero-gradient animate-fade-in">
-        <div>
-          <div className="eyebrow">2026 collection</div>
-          <h1 className="hero-title">Official campus essentials.</h1>
+    <div className="container home-page">
+      <section className="hero-gradient" aria-labelledby="hero-heading">
+        <div className="hero-copy-column">
+          <div className="eyebrow hero-reveal">The 2026 campus collection</div>
+          <h1 id="hero-heading" className="hero-title hero-reveal hero-reveal-delay-1">
+            Built for the <em>in-between.</em>
+          </h1>
           <p className="hero-copy">
-            Apparel, accessories, and study gear from the university store. Sign in with your
-            university account for order history and eligible department pricing.
+            From the 8 a.m. lecture to the late library run—official pieces made to keep up
+            with real campus days.
           </p>
+          <div className="hero-actions hero-reveal hero-reveal-delay-2">
+            <a className="btn btn-primary hero-cta" href="#catalog">
+              Shop the collection <ArrowDownRight size={17} />
+            </a>
+            <span className="hero-note">
+              <ShieldCheck size={16} /> Verified university access
+            </span>
+          </div>
         </div>
-        <div className="hero-note">
-          <ShieldCheck size={16} /> Verified university access
+
+        <div className="hero-visual hero-reveal hero-reveal-delay-2" aria-hidden="true">
+          <div className="hero-image-frame">
+            <img src={featuredImage} alt="" />
+          </div>
+          <div className="hero-stamp">
+            <span>Official</span>
+            <strong>CS</strong>
+            <span>Campus issue</span>
+          </div>
+          <div className="hero-caption">
+            <span>01 / Everyday uniform</span>
+            <span>{featuredProduct?.category?.name || 'Campus apparel'}</span>
+          </div>
         </div>
       </section>
 
       {weather && (
-        <section className="card" style={{ padding: '1.25rem', marginBottom: '2rem' }} aria-labelledby="weather-heading">
-          <div className="flex items-center justify-between" style={{ gap: '1rem', flexWrap: 'wrap' }}>
-            <div className="flex items-center gap-3">
-              <div
-                style={{
-                  width: '44px',
-                  height: '44px',
-                  borderRadius: '12px',
-                  display: 'grid',
-                  placeItems: 'center',
-                  color: '#1d4ed8',
-                  backgroundColor: '#eff6ff',
-                }}
-              >
+        <section className="weather-strip" aria-labelledby="weather-heading">
+          <div className="weather-summary">
+            <div className="weather-icon">
                 <CloudSun size={24} />
-              </div>
-              <div>
-                <div className="eyebrow">Live campus weather · {weather.source}</div>
-                <h2 id="weather-heading" style={{ fontSize: '1.15rem', marginTop: '2px' }}>
-                  {weather.current.temperatureC}°C · {weather.current.condition}
-                </h2>
-              </div>
             </div>
-            <div className="flex items-center gap-2" style={{ color: '#64748b', fontSize: '0.8rem' }}>
-              <MapPin size={14} /> {weather.location.name}
+            <div>
+              <div className="eyebrow">What to wear now · {weather.source}</div>
+              <h2 id="weather-heading">
+                {weather.current.temperatureC}° <span>{weather.current.condition}</span>
+              </h2>
             </div>
           </div>
 
-          <p style={{ color: '#475569', fontSize: '0.9rem', marginTop: '0.85rem' }}>
+          <p className="weather-message">
             {weather.recommendation.message}
           </p>
 
+          <div className="weather-location">
+            <MapPin size={14} /> {weather.location.name}
+          </div>
+
           {weather.recommendation.products.length > 0 && (
-            <div className="flex items-center gap-2" style={{ marginTop: '0.85rem', flexWrap: 'wrap' }}>
-              <span style={{ color: '#475569', fontSize: '0.8rem', fontWeight: 700 }}>Recommended:</span>
+            <div className="weather-products">
+              <span>Today’s picks</span>
               {weather.recommendation.products.map((product) => (
                 <button
                   key={product.id}
@@ -147,7 +162,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectProduct }) => {
       <section id="catalog">
         <div className="section-header">
           <div>
-            <h2 className="section-title">Catalog</h2>
+            <div className="eyebrow">Wear it your way</div>
+            <h2 className="section-title">The campus edit</h2>
             <p className="section-copy">{loading ? 'Loading products…' : `${products.length} products available`}</p>
           </div>
 
