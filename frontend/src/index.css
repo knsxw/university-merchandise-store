@@ -782,6 +782,12 @@ img {
   border-radius: var(--radius-full);
 }
 
+.product-footer .btn:hover:not(:disabled) {
+  color: #fff;
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+}
+
 .product-price { font-size: 16px; font-weight: 700; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
 .product-price-discount { color: #166534; }
 .product-price-old { color: #a1a1aa; font-size: 11px; text-decoration: line-through; }
