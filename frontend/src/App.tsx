@@ -25,7 +25,8 @@ function AppContent() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div className="app-shell">
+      <a className="skip-link" href="#main-content">Skip to content</a>
       {/* Navigation Header */}
       <Navbar
         currentTab={currentTab}
@@ -39,7 +40,7 @@ function AppContent() {
       )}
 
       {/* Main View Router */}
-      <main style={{ flex: 1 }}>
+      <main id="main-content" className="app-main">
         {currentTab === 'shop' && (
           <HomePage
             onSelectProduct={(p) => setSelectedProduct(p)}
@@ -70,8 +71,11 @@ function AppContent() {
 
       <footer className="app-footer">
         <div className="container footer-inner">
-          <span>Campus Store · CSX4110</span>
-          <span>© 2026 University Merchandise Store</span>
+          <div>
+            <span className="footer-mark">CS</span>
+            <span>Campus Store · CSX4110</span>
+          </div>
+          <span>Made for campus life · © 2026</span>
         </div>
       </footer>
     </div>

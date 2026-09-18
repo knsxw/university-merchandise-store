@@ -48,7 +48,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelectProdu
       </div>
 
       <div className="product-content">
-        <div className="product-category">{product.category?.name || 'Merchandise'}</div>
+        <div className="product-category">
+          <span>{product.category?.name || 'Merchandise'}</span>
+          <span aria-hidden="true">↗</span>
+        </div>
         <h3 className="product-name">{product.name}</h3>
         <p className="product-description">{product.description}</p>
 
