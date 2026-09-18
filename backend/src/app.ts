@@ -10,6 +10,7 @@ import cartRoutes from './routes/cart.routes';
 import orderRoutes from './routes/order.routes';
 import userRoutes from './routes/user.routes';
 import peerRoutes from './routes/peer.routes';
+import weatherRoutes from './routes/weather.routes';
 import settingsRoutes from './routes/settings.routes';
 import { errorHandler } from './middlewares/errorHandler';
 import { config } from './config/env';
@@ -48,6 +49,7 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/weather', weatherRoutes);
 app.use('/api', peerRoutes); // Exposes GET /api/products/available
 
 // Global Error Handler

@@ -29,6 +29,26 @@ export interface Product {
   createdBy?: number | null;
 }
 
+export interface WeatherRecommendation {
+  source: 'Open-Meteo';
+  location: {
+    name: string;
+    latitude: number;
+    longitude: number;
+  };
+  current: {
+    observedAt: string;
+    temperatureC: number;
+    precipitationMm: number;
+    weatherCode: number;
+    condition: string;
+  };
+  recommendation: {
+    message: string;
+    products: Product[];
+  };
+}
+
 export interface CartItem {
   id: number;
   cartId: number;

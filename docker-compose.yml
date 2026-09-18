@@ -40,8 +40,10 @@ services:
       - ADMIN_EMAILS=${ADMIN_EMAILS:-}
       - KEY_VAULT_URL=${KEY_VAULT_URL:-}
       - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
-      - PEER_EDUCORE_API_URL=${PEER_EDUCORE_API_URL:-https://api.educore.mock/api}
-      - PEER_EDUCORE_API_KEY=${PEER_EDUCORE_API_KEY:-educore_partner_secret_key_12345}
+      - WEATHER_API_URL=${WEATHER_API_URL:-https://api.open-meteo.com/v1/forecast}
+      - CAMPUS_LATITUDE=${CAMPUS_LATITUDE:-13.6123}
+      - CAMPUS_LONGITUDE=${CAMPUS_LONGITUDE:-100.8373}
+      - CAMPUS_LOCATION_NAME=${CAMPUS_LOCATION_NAME:-Assumption University, Suvarnabhumi Campus}
       - PARTNER_EXPOSED_API_KEY=${PARTNER_EXPOSED_API_KEY:-partner_incoming_api_key_98765}
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost,http://localhost:3000,http://localhost:5173}
     depends_on:

@@ -19,6 +19,7 @@ async function startServer() {
     app.listen(port, () => {
       console.log(`🚀 Smart University Merchandise Store API is running on http://localhost:${port}`);
       console.log(`📋 Health Check: http://localhost:${port}/api/health`);
+      console.log(`🌤️  Weather Recommendations: http://localhost:${port}/api/weather/recommendations`);
       console.log(`🔑 Peer Available Products API: http://localhost:${port}/api/products/available (x-api-key required)`);
     });
   } catch (error) {

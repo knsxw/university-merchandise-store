@@ -1,13 +1,12 @@
 import { Request, Response } from 'express';
 import prisma from '../config/db';
-import { verifyDepartmentEligibility } from '../services/peer.service';
 import { parseInteger } from '../utils/validation';
 
 class InsufficientStockError extends Error {}
 
 /**
  * Checkout user's cart and create an order
- * Integrates Peer API department check for department discounts
+ * Uses the authenticated user's department for department discounts
  */
 export const checkout = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -54,21 +53,17 @@ export const checkout = async (req: Request, res: Response): Promise<void> => {
       price: number;
     }> = [];
 
-    // Calculate pricing with Peer API department discount verification
+    // Calculate pricing with the department stored on the authenticated profile
     for (const item of cart.items) {
       const originalPrice = Number(item.product.price);
       let unitPrice = originalPrice;
       const discountPct = Number(item.product.discountPct || 0);
 
       if (discountPct > 0 && item.product.department) {
-        // Query Peer API with studentId / student department
-        const studentId = user.microsoftId || user.email;
-        const eligibility = await verifyDepartmentEligibility(
-          studentId,
-          item.product.department
-        );
+        const userDepartment = user.department?.trim().toLowerCase();
+        const productDepartment = item.product.department.trim().toLowerCase();
 
-        if (eligibility.isEligible) {
+        if (userDepartment === productDepartment) {
           const discountAmount = (originalPrice * discountPct) / 100;
           unitPrice = originalPrice - discountAmount;
           totalDiscountApplied += discountAmount * item.quantity;
