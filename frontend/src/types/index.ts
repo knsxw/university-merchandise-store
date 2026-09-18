@@ -29,6 +29,25 @@ export interface Product {
   createdBy?: number | null;
 }
 
+export interface BulkProductInput {
+  row: number;
+  name: string;
+  description: string;
+  price: number;
+  stock: number;
+  categoryId: number;
+  category: string;
+  imageUrl: string;
+  department: string;
+  discountPct: number;
+}
+
+export interface ProductImportError {
+  row: number;
+  field: string;
+  message: string;
+}
+
 export interface WeatherRecommendation {
   source: 'Open-Meteo';
   location: {
