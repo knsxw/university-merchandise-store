@@ -3,6 +3,7 @@ import {
   getAllProducts,
   getProductById,
   createProduct,
+  bulkCreateProducts,
   updateProduct,
   deleteProduct,
   generateAiDescription,
@@ -20,6 +21,7 @@ router.get('/:id', getProductById);
 
 // Staff & Admin protected routes
 router.post('/ai-description', authenticate, authorizeRole('Admin', 'Staff'), generateAiDescription);
+router.post('/bulk', authenticate, authorizeRole('Admin', 'Staff'), bulkCreateProducts);
 router.post('/', authenticate, authorizeRole('Admin', 'Staff'), createProduct);
 router.put('/:id', authenticate, authorizeRole('Admin', 'Staff'), updateProduct);
 router.delete('/:id', authenticate, authorizeRole('Admin', 'Staff'), deleteProduct);

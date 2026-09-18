@@ -209,6 +209,35 @@ Content-Type: application/json
 }
 ```
 
+### Bulk Product Import
+
+Staff and administrators can import up to 500 products at once from the **Admin Dashboard → Inventory** page.
+The importer accepts `.xlsx` and `.csv` files, provides a downloadable template, previews the parsed rows,
+and reports validation errors with their spreadsheet row numbers before anything is saved.
+
+Required columns are `name`, `price`, `stock`, and `category`. Optional columns are `description`,
+`imageUrl`, `department`, and `discountPct`. The category value must match an existing category name;
+`categoryId` is also accepted. Imports are atomic, so a failed row prevents the entire file from being added.
+
+```http
+POST /api/products/bulk
+Authorization: Bearer <STAFF_OR_ADMIN_JWT>
+Content-Type: application/json
+
+{
+  "products": [
+    {
+      "row": 2,
+      "name": "University Classic T-Shirt",
+      "price": 450,
+      "stock": 40,
+      "category": "Apparel & Clothing",
+      "discountPct": 0
+    }
+  ]
+}
+```
+
 ---
 
 ## 🔗 8. Public and Partner API Specifications

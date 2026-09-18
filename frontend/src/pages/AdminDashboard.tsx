@@ -11,11 +11,18 @@ import {
   DollarSign,
   CloudSun,
   Save,
-  Settings
+  Settings,
+  FileSpreadsheet,
+  Upload,
+  Download,
+  CheckCircle2,
+  AlertCircle,
+  X
 } from 'lucide-react';
 import api from '../services/api';
-import { Product, Category, Order, WeatherRecommendation } from '../types';
+import { Product, Category, Order, WeatherRecommendation, BulkProductInput, ProductImportError } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import { downloadProductImportTemplate, parseProductImportFile } from '../utils/productImport';
 
 export const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -25,7 +32,13 @@ export const AdminDashboard: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [showProductModal, setShowProductModal] = useState(false);
+  const [showBulkImportModal, setShowBulkImportModal] = useState(false);
   const [editingProductId, setEditingProductId] = useState<number | null>(null);
+  const [importFileName, setImportFileName] = useState('');
+  const [importProducts, setImportProducts] = useState<BulkProductInput[]>([]);
+  const [importErrors, setImportErrors] = useState<ProductImportError[]>([]);
+  const [isReadingImport, setIsReadingImport] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
   // Form State
   const [formName, setFormName] = useState('');
@@ -224,6 +237,53 @@ export const AdminDashboard: React.FC = () => {
     setFormDiscountPct('0');
   };
 
+  const resetBulkImport = () => {
+    setImportFileName('');
+    setImportProducts([]);
+    setImportErrors([]);
+    setIsReadingImport(false);
+    setIsImporting(false);
+  };
+
+  const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
+    setIsReadingImport(true);
+    setImportFileName(file.name);
+    try {
+      const preview = await parseProductImportFile(file, categories);
+      setImportProducts(preview.products);
+      setImportErrors(preview.errors);
+    } catch (error) {
+      console.error('Failed to read product import:', error);
+      setImportProducts([]);
+      setImportErrors([{ row: 1, field: 'file', message: 'Could not read this file. Use a valid .xlsx or .csv file.' }]);
+    } finally {
+      setIsReadingImport(false);
+    }
+  };
+
+  const handleBulkImport = async () => {
+    if (importProducts.length === 0 || importErrors.length > 0) return;
+
+    setIsImporting(true);
+    try {
+      const response = await api.post('/products/bulk', { products: importProducts });
+      await fetchInventory();
+      setShowBulkImportModal(false);
+      resetBulkImport();
+      alert(response.data.message || 'Products imported successfully');
+    } catch (err: any) {
+      const serverErrors = err.response?.data?.errors;
+      if (Array.isArray(serverErrors)) setImportErrors(serverErrors);
+      else alert(err.response?.data?.error || 'Failed to import products');
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   const handleUpdateOrderStatus = async (orderId: number, status: string) => {
     try {
       await api.put(`/orders/${orderId}/status`, { status });
@@ -285,12 +345,20 @@ export const AdminDashboard: React.FC = () => {
         </div>
 
         {activeTab === 'inventory' && (
-          <button
-            onClick={() => { resetForm(); setShowProductModal(true); }}
-            className="btn btn-primary"
-          >
-            <Plus size={18} /> Add product
-          </button>
+          <div className="flex items-center gap-2 admin-inventory-actions">
+            <button
+              onClick={() => { resetBulkImport(); setShowBulkImportModal(true); }}
+              className="btn btn-secondary"
+            >
+              <FileSpreadsheet size={18} /> Import file
+            </button>
+            <button
+              onClick={() => { resetForm(); setShowProductModal(true); }}
+              className="btn btn-primary"
+            >
+              <Plus size={18} /> Add product
+            </button>
+          </div>
         )}
       </div>
 
@@ -749,6 +817,147 @@ export const AdminDashboard: React.FC = () => {
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* BULK PRODUCT IMPORT MODAL */}
+      {showBulkImportModal && (
+        <div className="modal-overlay" onClick={() => setShowBulkImportModal(false)}>
+          <div
+            className="card animate-fade-in bulk-import-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="bulk-import-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="bulk-import-header">
+              <div>
+                <div className="flex items-center gap-2">
+                  <FileSpreadsheet size={22} color="#173f35" />
+                  <h2 id="bulk-import-title">Import products</h2>
+                </div>
+                <p>Add up to 500 products from an Excel or CSV file.</p>
+              </div>
+              <button
+                type="button"
+                className="bulk-import-close"
+                aria-label="Close product import"
+                onClick={() => setShowBulkImportModal(false)}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="bulk-import-guide">
+              <div>
+                <strong>Required columns</strong>
+                <span>name, price, stock, category</span>
+              </div>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => downloadProductImportTemplate(categories)}
+              >
+                <Download size={15} /> Download template
+              </button>
+            </div>
+
+            <label className={`bulk-import-dropzone ${importFileName ? 'has-file' : ''}`}>
+              <input
+                type="file"
+                accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                onChange={handleImportFile}
+              />
+              <span className="bulk-import-icon"><Upload size={22} /></span>
+              <span className="bulk-import-label">
+                {isReadingImport ? 'Reading file…' : importFileName || 'Choose an Excel or CSV file'}
+              </span>
+              <span className="bulk-import-hint">
+                {importFileName ? 'Choose another file' : '.xlsx or .csv'}
+              </span>
+            </label>
+
+            {importFileName && !isReadingImport && (
+              <div className="bulk-import-results">
+                <div className="bulk-import-summary">
+                  <div className="bulk-import-summary-item valid">
+                    <CheckCircle2 size={18} />
+                    <span><strong>{importProducts.length}</strong> rows found</span>
+                  </div>
+                  <div className={`bulk-import-summary-item ${importErrors.length > 0 ? 'invalid' : 'valid'}`}>
+                    {importErrors.length > 0 ? <AlertCircle size={18} /> : <CheckCircle2 size={18} />}
+                    <span><strong>{importErrors.length}</strong> validation errors</span>
+                  </div>
+                </div>
+
+                {importErrors.length > 0 && (
+                  <div className="bulk-import-errors" role="alert">
+                    <div className="bulk-import-errors-title">Fix these rows and upload the file again</div>
+                    {importErrors.slice(0, 8).map((error, index) => (
+                      <div key={`${error.row}-${error.field}-${index}`} className="bulk-import-error">
+                        <span>Row {error.row}</span>
+                        <p>{error.message}</p>
+                      </div>
+                    ))}
+                    {importErrors.length > 8 && (
+                      <div className="bulk-import-more-errors">+ {importErrors.length - 8} more errors</div>
+                    )}
+                  </div>
+                )}
+
+                {importProducts.length > 0 && (
+                  <div className="bulk-import-preview">
+                    <div className="bulk-import-preview-title">Preview</div>
+                    <div className="responsive-table">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Row</th>
+                            <th>Product</th>
+                            <th>Category</th>
+                            <th>Price</th>
+                            <th>Stock</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {importProducts.slice(0, 12).map((product) => (
+                            <tr key={product.row}>
+                              <td>{product.row}</td>
+                              <td>{product.name || 'Missing name'}</td>
+                              <td>{product.category || 'Unknown'}</td>
+                              <td>฿{product.price.toFixed(2)}</td>
+                              <td>{product.stock}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    {importProducts.length > 12 && (
+                      <div className="bulk-import-preview-note">Showing 12 of {importProducts.length} rows</div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="bulk-import-footer">
+              <span>Nothing is added until every row passes validation.</span>
+              <div className="flex items-center gap-2">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowBulkImportModal(false)}>
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  disabled={isImporting || isReadingImport || importProducts.length === 0 || importErrors.length > 0}
+                  onClick={handleBulkImport}
+                >
+                  <Upload size={16} />
+                  {isImporting ? 'Importing…' : `Import ${importProducts.length || ''} products`}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
