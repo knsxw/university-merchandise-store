@@ -20,8 +20,8 @@ The **Smart University Merchandise Store** is a modern, web-based e-commerce pla
 ### Key Capabilities:
 1. **Microsoft Entra ID (Azure AD) Authentication & RBAC**: Role-based access control for **Students**, **Staff**, and **Administrators**.
 2. **AI Product Description Generation**: Integrated with **OpenAI GPT-4** to automatically write professional merchandise descriptions.
-3. **Peer API Integration**:
-   - **Consuming Peer API**: Communicates with the partner team's **EduCore Course Registration API** (`GET /students/{studentId}/department`) to verify student department enrollment for student discounts.
+3. **Public & Partner API Integration**:
+   - **Consuming Public API**: Uses the **Open-Meteo Weather API** to show live campus weather and recommend suitable in-stock merchandise.
    - **Exposing Partner API**: Exposes `GET /api/products/available` protected with `x-api-key` for partner university services.
 4. **Cloud & Container Ready**: Automated containerization with **Docker Compose**, **Nginx Reverse Proxy**, and **Azure Key Vault** secret management.
 
@@ -36,7 +36,7 @@ graph TD
     Nginx -->|/*| Frontend[React + Vite Frontend :3000]
     Backend -->|Prisma ORM| MySQL[(MySQL Database :3306)]
     Backend -->|AI Description Generation| OpenAI[OpenAI API]
-    Backend -->|Check Student Department x-api-key| EduCore[Peer EduCore API]
+    Backend -->|Current campus weather| OpenMeteo[Open-Meteo Public API]
     ExternalPeer[Partner Systems] -->|GET /api/products/available x-api-key| Backend
     Backend -.->|Secret Retrieval| AzureKV[Azure Key Vault]
 ```
@@ -58,10 +58,10 @@ university-merchandise-store/
 │   │   └── seed.ts             # Default roles, users, categories & sample products
 │   ├── src/
 │   │   ├── config/             # DB & Azure Key Vault configuration
-│   │   ├── controllers/        # Auth, Product, Cart, Order, User, Peer controllers
+│   │   ├── controllers/        # Auth, Product, Cart, Order, User, Weather controllers
 │   │   ├── middlewares/        # JWT auth, RBAC, API Key check, Error handler
 │   │   ├── routes/             # Express API routing
-│   │   ├── services/           # OpenAI AI service & EduCore Peer API client
+│   │   ├── services/           # OpenAI AI service & Open-Meteo client
 │   │   ├── app.ts              # Express application configuration
 │   │   └── server.ts           # Server bootstrap
 │   ├── Dockerfile
@@ -211,12 +211,19 @@ Content-Type: application/json
 
 ---
 
-## 🔗 8. Peer API Specifications
+## 🔗 8. Public and Partner API Specifications
 
-### A. Consuming Peer API (EduCore Course Registration)
-When a student checks out department-specific merchandise (e.g., Computer Science Jacket), our backend sends a request to the EduCore API:
-- **Endpoint**: `GET /students/{studentId}/department`
-- **Header**: `x-api-key: <PEER_EDUCORE_API_KEY>`
+### A. Consuming Public API (Open-Meteo)
+The backend requests current weather for the configured campus coordinates and turns the
+temperature, precipitation, and WMO weather code into in-stock product recommendations.
+
+- **Public endpoint**: `GET https://api.open-meteo.com/v1/forecast`
+- **Store endpoint**: `GET http://localhost:5000/api/weather/recommendations`
+- **Authentication**: None required
+- **Caching**: Weather responses are cached by the backend for 10 minutes
+
+Department discounts remain available and are calculated from the department stored on the
+authenticated university user profile.
 
 ### B. Exposed Partner API (`GET /api/products/available`)
 Partner university systems can query live store stock:
@@ -268,14 +275,12 @@ the class project. That identity only needs permission to read secrets.
 
    ```bash
    az keyvault secret set --vault-name <vault-name> --name JWT-SECRET --value '<at-least-32-random-characters>'
-   az keyvault secret set --vault-name <vault-name> --name PEER-EDUCORE-API-KEY --value '<outgoing-peer-api-key>'
    az keyvault secret set --vault-name <vault-name> --name PARTNER-EXPOSED-API-KEY --value '<incoming-partner-api-key>'
    ```
 
    | Key Vault secret | Backend setting |
    | :--- | :--- |
    | `JWT-SECRET` | `JWT_SECRET` |
-   | `PEER-EDUCORE-API-KEY` | `PEER_EDUCORE_API_KEY` |
    | `PARTNER-EXPOSED-API-KEY` | `PARTNER_EXPOSED_API_KEY` |
 
 3. Give the service principal the **Key Vault Secrets User** role at the vault scope if

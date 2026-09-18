@@ -64,7 +64,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderSuccess }) => {
           </button>
         </div>
 
-        {/* Peer API Student Discount Banner */}
+        {/* Department discount banner */}
         {hasDepartmentDiscount && (
           <div
             style={{
@@ -80,7 +80,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderSuccess }) => {
           >
             <ShieldCheck size={18} color="#059669" />
             <div>
-              <strong>Department pricing applied.</strong> Your {user?.department} eligibility is verified.
+              <strong>Department pricing applied.</strong> Your profile is registered with {user?.department}.
             </div>
           </div>
         )}

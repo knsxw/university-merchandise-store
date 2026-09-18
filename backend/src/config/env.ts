@@ -15,8 +15,10 @@ export interface AppConfig {
   azureClientSecret?: string;
   azureKeyVaultUri?: string;
   openaiModel: string;
-  peerEducoreApiUrl: string;
-  peerEducoreApiKey: string;
+  weatherApiUrl: string;
+  campusLatitude: number;
+  campusLongitude: number;
+  campusLocationName: string;
   partnerExposedApiKey: string;
   corsOrigins: string[];
   adminEmails: string[];
@@ -24,7 +26,6 @@ export interface AppConfig {
 
 const DEFAULT_DATABASE_URL = 'mysql://root:merch_secure_pass@localhost:3306/merch_store';
 const DEFAULT_JWT_SECRET = 'super_secret_jwt_signing_key_change_in_production';
-const DEFAULT_PEER_API_KEY = 'educore_partner_secret_key_12345';
 const DEFAULT_PARTNER_API_KEY = 'partner_incoming_api_key_98765';
 
 const parseCsv = (value?: string): string[] =>
@@ -60,8 +61,10 @@ export const config: AppConfig = {
       ? `https://${process.env.AZURE_KEY_VAULT_NAME}.vault.azure.net`
       : undefined),
   openaiModel: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-  peerEducoreApiUrl: process.env.PEER_EDUCORE_API_URL || 'https://api.educore.mock/api',
-  peerEducoreApiKey: process.env.PEER_EDUCORE_API_KEY || DEFAULT_PEER_API_KEY,
+  weatherApiUrl: process.env.WEATHER_API_URL || 'https://api.open-meteo.com/v1/forecast',
+  campusLatitude: parseFloat(process.env.CAMPUS_LATITUDE || '13.6123'),
+  campusLongitude: parseFloat(process.env.CAMPUS_LONGITUDE || '100.8373'),
+  campusLocationName: process.env.CAMPUS_LOCATION_NAME || 'Assumption University, Suvarnabhumi Campus',
   partnerExposedApiKey: process.env.PARTNER_EXPOSED_API_KEY || DEFAULT_PARTNER_API_KEY,
   corsOrigins: parseCsv(process.env.CORS_ORIGINS),
   adminEmails: parseCsv(process.env.ADMIN_EMAILS).map((email) => email.toLowerCase()),
@@ -91,9 +94,6 @@ export function validateProductionConfig(): void {
   if (!config.partnerExposedApiKey || config.partnerExposedApiKey === DEFAULT_PARTNER_API_KEY) {
     errors.push('PARTNER_EXPOSED_API_KEY must be replaced');
   }
-  if (!config.peerEducoreApiKey || config.peerEducoreApiKey === DEFAULT_PEER_API_KEY) {
-    errors.push('PEER_EDUCORE_API_KEY must be replaced');
-  }
   if (config.corsOrigins.length === 0) {
     errors.push('CORS_ORIGINS must list the permitted frontend origin(s)');
   }
@@ -105,7 +105,6 @@ export function validateProductionConfig(): void {
 
 type StringConfigKey =
   | 'jwtSecret'
-  | 'peerEducoreApiKey'
   | 'partnerExposedApiKey';
 
 const KEY_VAULT_SECRETS: ReadonlyArray<{
@@ -114,7 +113,6 @@ const KEY_VAULT_SECRETS: ReadonlyArray<{
   environmentName: string;
 }> = [
   { vaultName: 'JWT-SECRET', configKey: 'jwtSecret', environmentName: 'JWT_SECRET' },
-  { vaultName: 'PEER-EDUCORE-API-KEY', configKey: 'peerEducoreApiKey', environmentName: 'PEER_EDUCORE_API_KEY' },
   { vaultName: 'PARTNER-EXPOSED-API-KEY', configKey: 'partnerExposedApiKey', environmentName: 'PARTNER_EXPOSED_API_KEY' },
 ];
 

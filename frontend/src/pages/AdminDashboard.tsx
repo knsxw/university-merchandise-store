@@ -9,12 +9,12 @@ import {
   Edit2,
   Key,
   DollarSign,
-  ExternalLink,
+  CloudSun,
   Save,
   Settings
 } from 'lucide-react';
 import api from '../services/api';
-import { Product, Category, Order } from '../types';
+import { Product, Category, Order, WeatherRecommendation } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 
 export const AdminDashboard: React.FC = () => {
@@ -48,9 +48,9 @@ export const AdminDashboard: React.FC = () => {
   // Users State (Admin only)
   const [usersList, setUsersList] = useState<any[]>([]);
 
-  // Peer API Test Tool State
-  const [peerTestStudentId, setPeerTestStudentId] = useState('6611718');
-  const [peerTestResult, setPeerTestResult] = useState<any>(null);
+  // Integration test tool state
+  const [weatherTestResult, setWeatherTestResult] = useState<WeatherRecommendation | null>(null);
+  const [isTestingWeather, setIsTestingWeather] = useState(false);
   const [exposedApiResponse, setExposedApiResponse] = useState<any>(null);
   const [apiKeyInput, setApiKeyInput] = useState('partner_incoming_api_key_98765');
 
@@ -253,6 +253,18 @@ export const AdminDashboard: React.FC = () => {
       setExposedApiResponse(res.data);
     } catch (err: any) {
       setExposedApiResponse(err.response?.data || { error: err.message });
+    }
+  };
+
+  const handleTestWeatherApi = async () => {
+    setIsTestingWeather(true);
+    try {
+      const res = await api.get<WeatherRecommendation>('/weather/recommendations');
+      setWeatherTestResult(res.data);
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Failed to fetch campus weather');
+    } finally {
+      setIsTestingWeather(false);
     }
   };
 
@@ -578,7 +590,7 @@ export const AdminDashboard: React.FC = () => {
               </h3>
             </div>
             <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '1.25rem', lineHeight: 1.5 }}>
-              This endpoint allows partner university systems (like EduCore) to query available store merchandise in real-time. Protected by the <code>x-api-key</code> header.
+              This endpoint allows partner university systems to query available store merchandise in real-time. Protected by the <code>x-api-key</code> header.
             </p>
 
             <div style={{ marginBottom: '1rem' }}>
@@ -615,48 +627,28 @@ export const AdminDashboard: React.FC = () => {
             )}
           </div>
 
-          {/* Tool 2: Peer EduCore Course Registration API Verification */}
+          {/* Tool 2: Open-Meteo public API test */}
           <div className="card" style={{ padding: '1.5rem' }}>
             <div className="flex items-center gap-2" style={{ marginBottom: '0.75rem' }}>
-              <ExternalLink size={20} color="#059669" />
+              <CloudSun size={20} color="#059669" />
               <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>
-                Consuming Peer API: EduCore Verification
+                Public API: Open-Meteo Weather
               </h3>
             </div>
             <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '1.25rem', lineHeight: 1.5 }}>
-              Tests communication with partner team’s EduCore Course Registration API (<code>GET /students/{'{studentId}'}/department</code>) to verify student department enrollment.
+              Calls Open-Meteo through <code>GET /api/weather/recommendations</code> and uses live campus conditions to recommend in-stock merchandise.
             </p>
 
-            <div style={{ marginBottom: '1rem' }}>
-              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '0.35rem' }}>
-                Test Student ID / Entra ID:
-              </label>
-              <input
-                type="text"
-                value={peerTestStudentId}
-                onChange={(e) => setPeerTestStudentId(e.target.value)}
-                placeholder="e.g. 6611718 or 6722060"
-                className="form-input"
-              />
-            </div>
-
             <button
-              onClick={async () => {
-                setPeerTestResult({
-                  studentId: peerTestStudentId,
-                  department: peerTestStudentId.includes('6611718') || peerTestStudentId.includes('6630064') ? 'Computer Science' : 'Business Administration',
-                  enrolled: true,
-                  academicYear: 2026,
-                  peerApiStatus: '200 OK (Validated via EduCore API Key)',
-                });
-              }}
+              onClick={handleTestWeatherApi}
+              disabled={isTestingWeather}
               className="btn btn-outline-primary"
               style={{ width: '100%', marginBottom: '1rem' }}
             >
-              Verify Student Department via Peer API
+              {isTestingWeather ? 'Loading live weather…' : 'Test Open-Meteo Integration'}
             </button>
 
-            {peerTestResult && (
+            {weatherTestResult && (
               <div
                 style={{
                   backgroundColor: '#ecfdf5',
@@ -667,10 +659,13 @@ export const AdminDashboard: React.FC = () => {
                   fontSize: '0.85rem',
                 }}
               >
-                <div style={{ fontWeight: 800, marginBottom: '0.4rem' }}>✅ Peer Verification Success</div>
-                <div><strong>Verified Department:</strong> {peerTestResult.department}</div>
-                <div><strong>Enrollment Status:</strong> Active ({peerTestResult.academicYear})</div>
-                <div style={{ fontSize: '0.75rem', marginTop: '4px', color: '#047857' }}>{peerTestResult.peerApiStatus}</div>
+                <div style={{ fontWeight: 800, marginBottom: '0.4rem' }}>Open-Meteo response received</div>
+                <div><strong>Location:</strong> {weatherTestResult.location.name}</div>
+                <div><strong>Current:</strong> {weatherTestResult.current.temperatureC}°C, {weatherTestResult.current.condition}</div>
+                <div><strong>Recommendation:</strong> {weatherTestResult.recommendation.message}</div>
+                <div style={{ fontSize: '0.75rem', marginTop: '4px', color: '#047857' }}>
+                  {weatherTestResult.recommendation.products.length} matching product(s) · Source: {weatherTestResult.source}
+                </div>
               </div>
             )}
           </div>
