@@ -44,13 +44,15 @@ app.get('/api/health', (req, res) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
+// Register the partner endpoint before /api/products/:id so "available"
+// is not interpreted as a product ID.
+app.use('/api', peerRoutes); // Exposes GET /api/products/available
 app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/weather', weatherRoutes);
-app.use('/api', peerRoutes); // Exposes GET /api/products/available
 
 // Global Error Handler
 app.use(errorHandler);
