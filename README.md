@@ -150,9 +150,9 @@ The seed script creates default test accounts with instant role switching availa
 | :--- | :--- | :--- | :--- | :--- |
 | **Admin** | System Admin | `admin@university.edu` | IT Services | Full control: Users, Roles, Products, Orders, Reports |
 | **Staff** | Store Staff Member | `staff@university.edu` | Bookstore & Merch | Create/Edit/Delete products, AI copy generation, Order status update |
-| **Student** | Khine Khant | `khine.k@student.university.edu` | Computer Science | Browse merchandise, Add to cart, 20% CS jacket discount, View orders |
-| **Student** | Siva Paoren | `siva.p@student.university.edu` | Computer Science | Browse merchandise, CS discount eligible |
-| **Student** | Thant Zin Oo | `thant.z@student.university.edu` | Business Admin | Browse merchandise, standard student ordering |
+| **Student** | Khine Khant | `khine.k@university.edu` | Computer Science | Browse merchandise, Add to cart, 20% CS jacket discount, View orders |
+| **Student** | Siva Paoren | `siva.p@university.edu` | Computer Science | Browse merchandise, CS discount eligible |
+| **Student** | Thant Zin Oo | `thant.z@university.edu` | Business Admin | Browse merchandise, standard student ordering |
 
 ### Configuring Real Microsoft Entra ID Login
 
