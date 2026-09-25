@@ -1,4 +1,4 @@
-# 🛍️ Smart University Merchandise Store
+# 🛍️ Smart Store
 
 [![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 [![React 18](https://img.shields.io/badge/Frontend-React%20%2B%20TypeScript-61DAFB?logo=react&logoColor=black)](https://reactjs.org/)
