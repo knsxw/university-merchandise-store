@@ -51,6 +51,8 @@ university-merchandise-store/
 ├── nginx.conf                  # Nginx reverse proxy configuration
 ├── .env.example                # Unified environment variable template
 ├── README.md                   # Project documentation
+├── docs/                       # Project documentation & reference guides
+│   └── API.md                  # Detailed Backend REST API specifications & schemas
 │
 ├── backend/                    # Node.js + Express + TypeScript + Prisma
 │   ├── prisma/
@@ -240,44 +242,84 @@ Content-Type: application/json
 
 ---
 
-## 🔗 8. Public and Partner API Specifications
+## 📡 8. Backend REST API Documentation
 
-### A. Consuming Public API (Open-Meteo)
-The backend requests current weather for the configured campus coordinates and turns the
-temperature, precipitation, and WMO weather code into in-stock product recommendations.
+The backend provides a RESTful JSON API listening on port `5000` (proxied via Nginx at `/api`). All request bodies and response payloads use JSON unless otherwise specified.
 
-- **Public endpoint**: `GET https://api.open-meteo.com/v1/forecast`
-- **Store endpoint**: `GET http://localhost:5000/api/weather/recommendations`
-- **Authentication**: None required
-- **Caching**: Weather responses are cached by the backend for 10 minutes
+### Base URLs
+- **Local Dev**: `http://localhost:5000/api`
+- **Docker Compose (via Nginx)**: `http://localhost/api`
+- **Production (HTTPS)**: `https://<domain>/api`
 
-Department discounts remain available and are calculated from the department stored on the
-authenticated university user profile.
+### Authentication & Authorization Schemes
+- **Public**: No authorization required.
+- **JWT Bearer Token**: Pass header `Authorization: Bearer <token>`. Generated upon Microsoft Entra ID or dev login. Tokens encode `userId`, `roleName`, `email`, and `department`.
+- **RBAC Roles**: 
+  - `Student`: Browse catalog, manage own cart, checkout orders, view own order history.
+  - `Staff`: All student actions + create/update/delete products, generate AI descriptions, bulk import, view all orders, update order status.
+  - `Admin`: Full permissions including user role assignment, role listing, and AI site settings.
+- **Partner API Key**: Header `x-api-key: <key>` validated against `PARTNER_EXPOSED_API_KEY`.
 
-### B. Exposed Partner API (`GET /api/products/available`)
-Partner university systems can query live store stock:
-- **Endpoint**: `GET http://localhost:5000/api/products/available`
-- **Header**: `x-api-key: partner_incoming_api_key_98765`
+---
 
-**Example Response:**
-```json
-[
-  {
-    "id": 1,
-    "name": "Signature University Hoodie",
-    "stock": 45,
-    "price": 790
-  },
-  {
-    "id": 2,
-    "name": "Computer Science Department Varsity Jacket",
-    "stock": 25,
-    "price": 1290,
-    "department": "Computer Science",
-    "discountPct": 20
-  }
-]
-```
+### 📋 API Endpoint Summary
+
+| Category | Method | Endpoint | Auth / Role | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| **System** | `GET` | `/api/health` | Public | API health check and server timestamp |
+| **Auth** | `POST` | `/api/auth/microsoft` | Public | Microsoft Entra ID login & JWT token exchange |
+| | `POST` | `/api/auth/dev-login` | Public (Dev only) | Instant role switcher for local testing |
+| | `GET` | `/api/auth/me` | Bearer Token | Retrieve currently authenticated user profile |
+| **Products** | `GET` | `/api/products` | Public | List products (with category, search, department filters) |
+| | `GET` | `/api/products/categories` | Public | List product categories with product counts |
+| | `GET` | `/api/products/:id` | Public | Get product details by ID |
+| | `POST` | `/api/products` | Staff, Admin | Create a new merchandise product |
+| | `POST` | `/api/products/ai-description` | Staff, Admin | Generate AI marketing copy using OpenAI GPT |
+| | `POST` | `/api/products/bulk` | Staff, Admin | Atomic bulk import (up to 500 products) |
+| | `PUT` | `/api/products/:id` | Staff, Admin | Update product details |
+| | `DELETE` | `/api/products/:id` | Staff, Admin | Delete a merchandise product |
+| **Cart** | `GET` | `/api/cart` | Bearer Token | Get active cart items, item count, and subtotal |
+| | `POST` | `/api/cart/add` | Bearer Token | Add product to cart or increment quantity |
+| | `PUT` | `/api/cart/items/:itemId` | Bearer Token | Update cart item quantity (0 removes item) |
+| | `DELETE` | `/api/cart/items/:itemId` | Bearer Token | Remove specific item from cart |
+| | `DELETE` | `/api/cart/clear` | Bearer Token | Clear all items from user cart |
+| **Orders** | `POST` | `/api/orders/checkout` | Bearer Token | Checkout cart with department discount & deduct stock |
+| | `GET` | `/api/orders/my-orders` | Bearer Token | Get order history of logged-in user |
+| | `GET` | `/api/orders` | Staff, Admin | Get all orders in store with revenue analytics |
+| | `PUT` | `/api/orders/:id/status` | Staff, Admin | Update order status (`PENDING`, `PROCESSING`, `COMPLETED`, `CANCELLED`) |
+| **Users** | `GET` | `/api/users` | Admin | List all registered users with role & order count |
+| | `GET` | `/api/users/roles` | Admin | List all system RBAC roles |
+| | `PUT` | `/api/users/:id` | Admin | Update user role or department |
+| **Settings** | `GET` | `/api/settings` | Admin | Get current AI configuration (masked API key) |
+| | `PUT` | `/api/settings` | Admin | Update AI endpoint URL, model, or API key |
+| **Weather** | `GET` | `/api/weather/recommendations` | Public | Campus weather & smart apparel recommendations (Open-Meteo) |
+| **Partner API** | `GET` | `/api/products/available` | `x-api-key` | In-stock product feed for partner university systems |
+
+---
+
+### 📖 Detailed Endpoint Reference
+
+> 💡 **Full API Reference**: All endpoint request bodies, query parameters, complete JSON schemas, and error responses are documented in the dedicated **[Backend REST API Reference (docs/API.md)](docs/API.md)**.
+
+#### Highlighted API Integrations:
+
+##### A. Consuming Public API (Open-Meteo Campus Weather)
+The backend requests live campus weather from the external **Open-Meteo Public API** and evaluates temperature, precipitation, and WMO codes to recommend relevant in-stock apparel.
+- **Store Endpoint**: `GET http://localhost:5000/api/weather/recommendations`
+- **External Public API**: `GET https://api.open-meteo.com/v1/forecast`
+- **Authentication**: None required (Public)
+- **Caching**: 10 minutes in-memory cache to respect public API rate limits.
+- *Detailed schema: [Weather Recommendations in docs/API.md](docs/API.md#8-campus-weather-recommendations-consuming-public-api)*
+
+##### B. Exposed Partner API (`GET /api/products/available`)
+Partner university systems can query live store inventory with department-specific pricing and stock levels.
+- **Store Endpoint**: `GET http://localhost:5000/api/products/available`
+- **Header**: `x-api-key: partner_incoming_api_key_98765` (configurable via `PARTNER_EXPOSED_API_KEY`)
+- *Detailed schema: [Partner System API in docs/API.md](docs/API.md#9-partner--peer-university-system-api-exposing-protected-api)*
+
+##### C. Complete Documentation Link
+For the complete catalog of all 20+ endpoints (Authentication, Products, Cart, Orders, Admin Users, Site Settings, Error handling):
+👉 **[Read the Full Backend API Documentation (docs/API.md)](docs/API.md)**
 
 ---
 
